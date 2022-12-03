@@ -47,7 +47,7 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
     defaultValues: {
       rate: 0.00001,
       startTime: dayjs().toDate(),
-      stopTime: dayjs().add(2, 'hour').toDate(),
+      stopTime: dayjs().add(1, 'hour').toDate(),
       receiverAddress: isDev ? '0x3C6860DA6ED0939AE9f668476ca9B48Bcc4Ea939' : undefined,
     },
   });

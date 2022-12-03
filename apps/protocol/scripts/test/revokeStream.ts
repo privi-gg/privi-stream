@@ -7,6 +7,7 @@ import {
   senderKeyPair,
   tsunamiAddress,
   recipient,
+  provider,
 } from './common';
 import { prepareRevoke } from './proof';
 
@@ -36,11 +37,18 @@ const main = async () => {
     recipient,
   });
 
-  const tx = await tsunami.callStatic.revoke(proofArgs, extData, { gasLimit: 2_000_000 });
-  //   console.log('tx', tx);
+  let balanceRecipient = await provider.getBalance(recipient);
+  console.log('Balance recipient before:', balanceRecipient.toString());
+
+  // const tx = await tsunami.callStatic.revoke(proofArgs, extData, { gasLimit: 2_000_000 });
+  const tx = await tsunami.revoke(proofArgs, extData, { gasLimit: 2_000_000 });
+  console.log('tx', tx);
 
   const receipt = await tx.wait();
   console.log('receipt', receipt);
+
+  balanceRecipient = await provider.getBalance(recipient);
+  console.log('Balance recipient after:', balanceRecipient.toString());
 };
 
 main();

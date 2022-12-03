@@ -8,7 +8,7 @@ import { useShieldedAccount } from 'contexts/shieldedAccount';
 import { scanStreamUTXOFor } from 'utils/stream';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
 import { useWithdrawStream } from 'api/withdrawStream';
-import StreamDetail from './StreamDetails';
+import WithdrawStreamDetail from './WithdrawStreamDetails';
 import logger from 'utils/logger';
 import { prepareRevoke, prepareWithdraw } from 'utils/proofs';
 import { BN, currentBlockTimestamp, isValidAddress } from 'utils/eth';
@@ -16,6 +16,7 @@ import { Contract, providers, Wallet } from 'ethers';
 import { tsunamiAddress } from 'config/network';
 import tsunami from 'abi/tsunami.json';
 import { useRevokeStream } from 'api/revokeStream';
+import RevokeStreamDetail from './RevokeStreamDetails';
 
 const defaultReceiverValue = isDev ? '0x3C6860DA6ED0939AE9f668476ca9B48Bcc4Ea939' : '';
 const defaultRecipientValue = isDev ? '0x80630fBf405eD070F10c8fFE8E9A83C60736a770' : '';
@@ -108,7 +109,7 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
       throw new Error('Receiver not registered');
     }
 
-    const newStopTime = (await currentBlockTimestamp(provider)) + 2 * 60;
+    const newStopTime = (await currentBlockTimestamp(provider)) + 4 * 60;
     if (streamUtxo && newStopTime >= streamUtxo?.stopTime) {
       alert('Too late to stop stream! Stream ending soon anyway!');
       return;
@@ -170,7 +171,7 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
       </Button>
       {streamUtxo && (
         <VStack alignItems="stretch" px={12}>
-          <StreamDetail utxo={streamUtxo} />
+          <RevokeStreamDetail utxo={streamUtxo} />
           <VStack alignItems="stretch">
             <Text>Fund (not yet streamed) recipient address:</Text>
             <Input

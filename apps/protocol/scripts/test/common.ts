@@ -13,7 +13,8 @@ export const receiverKeyPair = new KeyPair(
   '0x17127c3cf67b647bbebc58a63911f35903bff485c4aa47295366c485cc6ab2bb',
 );
 
-export const tsunamiAddress = '0xc4c55B2c2Bb6fD0229A7aA508e33bc4Ca54D0aa0';
+// export const tsunamiAddress = '0xc4c55B2c2Bb6fD0229A7aA508e33bc4Ca54D0aa0'; // wETH withdraws
+export const tsunamiAddress = '0x56aDcC1BaF658C19FA4B149270e351db01957ca4'; // ETH withdraws
 
 const rpcUrl = process.env.RPC_GOERLI as string;
 const privateKeys = (process.env.PRIVATE_KEYS_TEST as string).split(',');

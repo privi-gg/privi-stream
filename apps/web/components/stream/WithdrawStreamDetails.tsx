@@ -24,7 +24,7 @@ interface IStreamDetailsProps extends StackProps {
   utxo: Utxo;
 }
 
-const StreamDetail: FC<IStreamDetailsProps> = ({ utxo, ...props }) => {
+const WithdrawStreamDetail: FC<IStreamDetailsProps> = ({ utxo, ...props }) => {
   const [withdrawAmt, setWithdrawAmt] = useState('0');
   const [progress, setProgress] = useState(0);
   const provider = useProvider();
@@ -112,4 +112,4 @@ const StreamDetail: FC<IStreamDetailsProps> = ({ utxo, ...props }) => {
   );
 };
 
-export default StreamDetail;
+export default WithdrawStreamDetail;

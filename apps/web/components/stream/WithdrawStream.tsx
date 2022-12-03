@@ -8,7 +8,7 @@ import { useShieldedAccount } from 'contexts/shieldedAccount';
 import { scanStreamUTXOFor } from 'utils/stream';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
 import { useWithdrawStream } from 'api/withdrawStream';
-import StreamDetail from './StreamDetails';
+import WithdrawStreamDetail from './WithdrawStreamDetails';
 import logger from 'utils/logger';
 import { prepareWithdraw } from 'utils/proofs';
 import { BN, currentBlockTimestamp, isValidAddress } from 'utils/eth';
@@ -159,7 +159,7 @@ const WithdrawStream: FC<StackProps> = ({ ...props }) => {
       </Button>
       {streamUtxo && (
         <VStack alignItems="stretch" px={12}>
-          <StreamDetail utxo={streamUtxo} />
+          <WithdrawStreamDetail utxo={streamUtxo} />
           <VStack alignItems="stretch">
             <Text>Fund recipient address:</Text>
             <Input

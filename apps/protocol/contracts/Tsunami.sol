@@ -61,7 +61,6 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
     IVerifier public immutable revokeVerifier;
     IWETH public immutable token;
 
-    uint256 public lastBalance;
     uint256 public maxDepositAmount;
     mapping(bytes32 => bool) public nullifierHashes;
 
@@ -87,8 +86,6 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
     {
         require(msg.value == args.amount, "Invalid amount");
         require(verifyProposalProof(args), "Invalid proposal proof");
-        // token.approve(address(this), args.amount);
-        // token.transferFrom(msg.sender, address(this), args.amount);
         token.deposit{value: args.amount}();
         uint32 index = _insert(args.commitment);
         emit NewCommitment(args.commitment, index, encryptedOutput);
@@ -179,13 +176,18 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
         require(verifyWithdrawProof(args), "Invalid transaction proof");
 
         nullifierHashes[args.inputNullifier] = true;
-        token.transfer(extData.recipient, uint256(extData.withdrawAmount));
+
+        token.withdraw(extData.withdrawAmount);
+        (bool success, ) = payable(extData.recipient).call{value: uint256(extData.withdrawAmount)}(
+            ""
+        );
+        require(success, "Failed to send funds");
+        // token.transfer(extData.recipient, uint256(extData.withdrawAmount));
 
         if (extData.fee > 0) {
             token.transfer(extData.relayer, extData.fee);
         }
 
-        lastBalance = token.balanceOf(address(this));
         uint32 index = _insert(args.outputCommitment);
 
         emit NewCommitment(args.outputCommitment, index, extData.encryptedOutput);
@@ -211,18 +213,22 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
         require(verifyRevokeProof(args), "Invalid transaction proof");
 
         nullifierHashes[args.inputNullifier] = true;
-        token.transfer(extData.recipient, uint256(extData.withdrawAmount));
+        token.withdraw(extData.withdrawAmount);
+        (bool success, ) = payable(extData.recipient).call{value: uint256(extData.withdrawAmount)}(
+            ""
+        );
+        require(success, "Failed to send funds");
+        // token.transfer(extData.recipient, uint256(extData.withdrawAmount));
 
         if (extData.fee > 0) {
             token.transfer(extData.relayer, extData.fee);
         }
 
-        lastBalance = token.balanceOf(address(this));
         uint32 index = _insert(args.outputCommitment);
 
         emit NewCommitment(args.outputCommitment, index, extData.encryptedOutput);
         emit NewNullifier(args.inputNullifier);
     }
 
-    // receive() external payable {}
+    receive() external payable {}
 }

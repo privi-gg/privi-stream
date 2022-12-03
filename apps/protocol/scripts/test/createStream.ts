@@ -14,10 +14,10 @@ const { utils } = ethers;
 const main = async () => {
   const tsunami = await getTsunami();
 
-  const duration = 2 * 60 * 60;
+  const duration = 1 * 60 * 60;
   const startTime = await currentTimestamp();
   const stopTime = startTime + duration;
-  const rate = utils.parseEther('0.000001');
+  const rate = utils.parseEther('0.00001');
   const keyPairs = {
     sender: senderKeyPair,
     receiver: receiverKeyPair,
@@ -38,7 +38,7 @@ const main = async () => {
     value: BigNumber.from(proofArgs.amount),
     gasLimit: 2_000_000,
   });
-  console.log('tx', tx);
+  // console.log('tx', tx);
 
   const receipt = await tx.wait();
   console.log('receipt', receipt);

@@ -133,7 +133,7 @@ describe.only('Tsunami', function () {
 
     await tsunami.withdraw(proofArgs1, extData1);
 
-    const balance1 = await token.balanceOf(recipient);
+    const balance1 = await ethers.provider.getBalance(recipient); // await token.balanceOf(recipient);
     expect(balance1).to.equal(withdraw1Amount);
 
     // 8000 sec passed
@@ -162,7 +162,7 @@ describe.only('Tsunami', function () {
     });
 
     await tsunami.withdraw(proofArgs2, extData2);
-    const balance2 = await token.balanceOf(recipient);
+    const balance2 = await ethers.provider.getBalance(recipient); // await token.balanceOf(recipient);
     expect(balance2).to.equal(balance1.add(withdraw2Amount));
   });
 
@@ -223,7 +223,7 @@ describe.only('Tsunami', function () {
 
     await tsunami.revoke(revokeProofArgs, extData);
 
-    const balance1 = await token.balanceOf(senderRecipient);
+    const balance1 = await ethers.provider.getBalance(senderRecipient); // await token.balanceOf(senderRecipient);
     expect(balance1).to.equal(senderWithdrawAmount);
 
     // Pass revoked stop time
@@ -250,7 +250,7 @@ describe.only('Tsunami', function () {
 
     await tsunami.withdraw(withdrawProofArgs, withdrawExtData);
 
-    const balance2 = await token.balanceOf(receiverRecipient);
+    const balance2 = await ethers.provider.getBalance(receiverRecipient); //await token.balanceOf(receiverRecipient);
     expect(balance2).to.equal(receiverWithdrawAmount);
   });
 
@@ -314,7 +314,7 @@ describe.only('Tsunami', function () {
 
     await tsunami.withdraw(withdrawProofArgs, withdrawExtData);
 
-    const balance1 = await token.balanceOf(receiverRecipient);
+    const balance1 = await ethers.provider.getBalance(receiverRecipient); // await token.balanceOf(receiverRecipient);
     expect(balance1).to.equal(receiverWithdraw1Amount);
 
     // 7000 sec passed
@@ -343,7 +343,7 @@ describe.only('Tsunami', function () {
     });
 
     await tsunami.revoke(revokeProofArgs, revokeExtData);
-    const balance2 = await token.balanceOf(senderRecipient);
+    const balance2 = await ethers.provider.getBalance(senderRecipient); // await token.balanceOf(senderRecipient);
     expect(balance2).to.equal(senderWithdrawAmount);
   });
 });
