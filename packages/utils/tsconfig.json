@@ -1,0 +1,9 @@
+{
+  "extends": "tsconfig/base.json",
+  "include": ["."],
+  "exclude": ["dist", "build", "node_modules", "**/*.test.ts"],
+  "compilerOptions": {
+    "target": "es5",
+    "outDir": "dist/"
+  }
+}

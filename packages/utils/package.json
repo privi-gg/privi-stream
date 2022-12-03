@@ -1,0 +1,36 @@
+{
+  "name": "@tsunami/utils",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha -r ts-node/register ./**/*.test.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "buffer": "^6.0.3",
+    "ethereum-cryptography": "^1.1.2",
+    "ethers": "^5.7.2",
+    "tweetnacl": "^1.0.3",
+    "tweetnacl-util": "^0.15.1",
+    "xcircomlib": "npm:circomlib@^0.5.5"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.4",
+    "@types/mocha": "^10.0.0",
+    "chai": "^4.3.7",
+    "eslint": "7.32.0",
+    "eslint-config-custom": "*",
+    "mocha": "^10.1.0",
+    "ts-node": "^10.9.1",
+    "tsconfig": "*",
+    "typescript": "^4.9.3"
+  }
+}
