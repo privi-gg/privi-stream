@@ -6,10 +6,15 @@
       "outputs": ["dist/**", ".next/**"]
     },
     "web#build": {
-      "env": ["NODE_ENV", "NEXT_PUBLIC_RPC_URL_GOERLI", "NEXT_PUBLIC_RPC_POLYGON_MUMBAI"]
+      "env": [
+        "NODE_ENV",
+        "NEXT_PUBLIC_RPC_URL_GOERLI",
+        "NEXT_PUBLIC_RPC_POLYGON_MUMBAI",
+        "NEXT_PUBLIC_RPC_URL_CHIADO"
+      ]
     },
     "protocol#build": {
-      "env": ["RPC_GOERLI", "PRIVATE_KEYS_TEST"]
+      "env": ["RPC_GOERLI", "PRIVATE_KEYS_TEST", "RPC_CHIADO", "RPC_POLYGON_MUMBAI", "HARDHAT_FORK"]
     },
     "lint": {
       "outputs": []

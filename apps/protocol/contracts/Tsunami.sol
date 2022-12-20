@@ -56,7 +56,7 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
     event NewCommitment(bytes32 commitment, uint256 index, bytes encryptedOutput);
     event NewNullifier(bytes32 nullifier);
 
-    IVerifier public immutable proposalVerifier;
+    IVerifier public immutable createVerifier;
     IVerifier public immutable withdrawVerifier;
     IVerifier public immutable revokeVerifier;
     IWETH public immutable token;
@@ -67,13 +67,13 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
     constructor(
         uint32 numLevels_,
         uint256 maxDepositAmount_,
-        address hasher_,
         IWETH token_,
-        IVerifier proposalVerifier_,
+        address hasher_,
+        IVerifier createVerifier_,
         IVerifier withdrawVerifier_,
         IVerifier revokeVerifier_
     ) MerkleTree(numLevels_, hasher_) {
-        proposalVerifier = proposalVerifier_;
+        createVerifier = createVerifier_;
         withdrawVerifier = withdrawVerifier_;
         revokeVerifier = revokeVerifier_;
         token = token_;
@@ -115,7 +115,7 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
 
     function verifyProposalProof(ProposalProofArgs calldata args) public view returns (bool) {
         return
-            proposalVerifier.verifyProof(
+            createVerifier.verifyProof(
                 args.proof.a,
                 args.proof.b,
                 args.proof.c,

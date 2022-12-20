@@ -14,7 +14,7 @@ describe.only('Tsunami', function () {
     const hasher = await deployHasher();
     const token = await deployContract('WETHMock');
     const proposalVerifier = await deployContract(
-      'contracts/verifiers/ProposalVerifier.sol:Verifier',
+      'contracts/verifiers/CreateVerifier.sol:Verifier',
     );
     const withdrawVerifier = await deployContract(
       'contracts/verifiers/WithdrawVerifier.sol:Verifier',
@@ -26,8 +26,8 @@ describe.only('Tsunami', function () {
       'Tsunami',
       TREE_HEIGHT,
       maxDepositAmt,
-      hasher.address,
       token.address,
+      hasher.address,
       proposalVerifier.address,
       withdrawVerifier.address,
       revokeVerifier.address,

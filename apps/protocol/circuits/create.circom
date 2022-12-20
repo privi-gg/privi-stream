@@ -11,7 +11,7 @@ include "./keyPair.circom";
 // commitment = hash(UTXO)
 // nullifier = hash(commitment, merklePath)
 
-template Proposal(nLevels, zeroLeaf) {
+template Create(nLevels, zeroLeaf) {
     signal input amount;
     signal input startTime;
     signal input stopTime;
@@ -63,4 +63,4 @@ template Proposal(nLevels, zeroLeaf) {
     commitment === commitmentHasher.out;
 }
 
-component main { public [amount, commitment] } = Proposal(20, 11850551329423159860688778991827824730037759162201783566284850822760196767874);
+component main { public [amount, commitment] } = Create(20, 11850551329423159860688778991827824730037759162201783566284850822760196767874);

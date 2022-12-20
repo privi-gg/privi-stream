@@ -1,7 +1,8 @@
+import { Contract } from 'ethers';
 import { ethers } from 'hardhat';
 const genContract = require('xcircomlib/src/poseidon_gencontract.js');
 
-export async function deployHasher(wallet?: any) {
+export async function deployHasher(wallet?: any): Promise<Contract> {
   const abi = genContract.generateABI(2) as any[];
   const bytecode = genContract.createCode(2) as any;
   const Factory = await ethers.getContractFactory(abi, bytecode);
