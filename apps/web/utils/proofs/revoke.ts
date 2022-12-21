@@ -160,7 +160,7 @@ export async function prepareRevoke({ tsunami, input, newStopTime, keyPairs, rec
     checkpointTime: input.checkpointTime,
     rate: input.rate,
     senderKeyPair: keyPairs.sender,
-    receiverKeyPair: keyPairs.receiver,
+    leafIndex: keyPairs.receiver,
   });
 
   const { proofArgs, extData } = await prepareRevokeProof({ tsunami, input, output, recipient });

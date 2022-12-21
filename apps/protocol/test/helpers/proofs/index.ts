@@ -1,3 +1,3 @@
 export * from './withdraw';
-export * from './proposal';
+export * from './create';
 export * from './revoke';

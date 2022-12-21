@@ -162,7 +162,7 @@ export async function prepareWithdraw({
     checkpointTime: newCheckpointTime,
     rate: input.rate,
     senderKeyPair: keyPairs.sender,
-    receiverKeyPair: keyPairs.receiver,
+    leafIndex: keyPairs.receiver,
   });
 
   const { proofArgs, extData } = await prepareWithdrawProof({ tsunami, input, output, recipient });

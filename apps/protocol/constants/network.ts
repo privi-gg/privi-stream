@@ -13,6 +13,11 @@ const gnosisChiado = {
   wrappedNativeCurrency: '0xfbe7a8FFD4EcB1678152bafb4915F1e5869178b0',
 };
 
+const shardeumLiberty20 = {
+  chainId: '8081',
+  wrappedNativeCurrency: '0x30aa192dB60Cd750472D5E052E3210B75EaF3e98',
+};
+
 // Supposed to be a Goerli fork
 const hardhat = {
   chainId: '31337',
@@ -23,6 +28,7 @@ const networks = {
   [goerli.chainId]: goerli,
   [polygonMumbai.chainId]: polygonMumbai,
   [gnosisChiado.chainId]: gnosisChiado,
+  [shardeumLiberty20.chainId]: shardeumLiberty20,
   [hardhat.chainId]: hardhat,
 };
 

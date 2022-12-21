@@ -28,7 +28,7 @@ async function generateProof({ output }: any) {
   };
 }
 
-export async function prepareProposal({ output }: any) {
+export async function prepareCreate({ output }: any) {
   const { proofArgs } = await generateProof({
     output,
   });

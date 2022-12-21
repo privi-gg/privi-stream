@@ -2,64 +2,24 @@
 pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IVerifier.sol";
-import "./interfaces/IWETH.sol";
+import "./interfaces/ITsunami.sol";
 import "./MerkleTree.sol";
+import {DataTypes} from "./types/DataTypes.sol";
 
-import "hardhat/console.sol";
+contract Tsunami is ITsunami, MerkleTree, ReentrancyGuard {
+    using SafeERC20 for IERC20;
 
-contract Tsunami is MerkleTree, ReentrancyGuard {
     uint256 public constant MAX_EXT_AMOUNT = 2**248;
     uint256 public constant MAX_FEE = 2**248;
     uint256 public constant MIN_EXT_AMOUNT_LIMIT = 0.5 ether;
 
-    struct ExtData {
-        address recipient;
-        uint256 withdrawAmount;
-        address relayer;
-        uint256 fee;
-        bytes encryptedOutput;
-    }
-
-    struct Proof {
-        uint256[2] a;
-        uint256[2][2] b;
-        uint256[2] c;
-    }
-
-    struct WithdrawProofArgs {
-        Proof proof;
-        bytes32 root;
-        bytes32 inputNullifier;
-        bytes32 outputCommitment;
-        bytes32 extDataHash;
-        uint256 publicAmount;
-        uint256 checkpointTime;
-    }
-
-    struct RevokeProofArgs {
-        Proof proof;
-        bytes32 root;
-        bytes32 inputNullifier;
-        bytes32 outputCommitment;
-        bytes32 extDataHash;
-        uint256 publicAmount;
-        uint256 stopTime;
-    }
-
-    struct ProposalProofArgs {
-        Proof proof;
-        uint256 amount;
-        bytes32 commitment;
-    }
-
-    event NewCommitment(bytes32 commitment, uint256 index, bytes encryptedOutput);
-    event NewNullifier(bytes32 nullifier);
-
     IVerifier public immutable createVerifier;
     IVerifier public immutable withdrawVerifier;
     IVerifier public immutable revokeVerifier;
-    IWETH public immutable token;
+    IERC20 public immutable token;
 
     uint256 public maxDepositAmount;
     mapping(bytes32 => bool) public nullifierHashes;
@@ -67,7 +27,7 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
     constructor(
         uint32 numLevels_,
         uint256 maxDepositAmount_,
-        IWETH token_,
+        IERC20 token_,
         address hasher_,
         IVerifier createVerifier_,
         IVerifier withdrawVerifier_,
@@ -80,22 +40,24 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
         maxDepositAmount = maxDepositAmount_;
     }
 
-    function create(ProposalProofArgs calldata args, bytes calldata encryptedOutput)
+    function create(DataTypes.ProposalProofArgs calldata args, bytes calldata encryptedOutput)
         external
-        payable
     {
-        require(msg.value == args.amount, "Invalid amount");
-        require(verifyProposalProof(args), "Invalid proposal proof");
-        token.deposit{value: args.amount}();
+        require(verifyCreateProof(args), "Invalid create proof");
+        token.safeTransferFrom(msg.sender, address(this), args.amount);
         uint32 index = _insert(args.commitment);
         emit NewCommitment(args.commitment, index, encryptedOutput);
     }
 
-    function withdraw(WithdrawProofArgs calldata args, ExtData calldata extData) external {
+    function withdraw(DataTypes.WithdrawProofArgs calldata args, DataTypes.ExtData calldata extData)
+        external
+    {
         _transactWithdraw(args, extData);
     }
 
-    function revoke(RevokeProofArgs calldata args, ExtData calldata extData) external {
+    function revoke(DataTypes.RevokeProofArgs calldata args, DataTypes.ExtData calldata extData)
+        external
+    {
         _transactRevoke(args, extData);
     }
 
@@ -113,7 +75,11 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
         return withdrawAmount + fee;
     }
 
-    function verifyProposalProof(ProposalProofArgs calldata args) public view returns (bool) {
+    function verifyCreateProof(DataTypes.ProposalProofArgs calldata args)
+        public
+        view
+        returns (bool)
+    {
         return
             createVerifier.verifyProof(
                 args.proof.a,
@@ -123,7 +89,11 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
             );
     }
 
-    function verifyWithdrawProof(WithdrawProofArgs calldata args) public view returns (bool) {
+    function verifyWithdrawProof(DataTypes.WithdrawProofArgs calldata args)
+        public
+        view
+        returns (bool)
+    {
         return
             withdrawVerifier.verifyProof(
                 args.proof.a,
@@ -140,7 +110,7 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
             );
     }
 
-    function verifyRevokeProof(RevokeProofArgs calldata args) public view returns (bool) {
+    function verifyRevokeProof(DataTypes.RevokeProofArgs calldata args) public view returns (bool) {
         return
             revokeVerifier.verifyProof(
                 args.proof.a,
@@ -157,10 +127,10 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
             );
     }
 
-    function _transactWithdraw(WithdrawProofArgs calldata args, ExtData calldata extData)
-        internal
-        nonReentrant
-    {
+    function _transactWithdraw(
+        DataTypes.WithdrawProofArgs calldata args,
+        DataTypes.ExtData calldata extData
+    ) internal nonReentrant {
         require(isKnownRoot(args.root), "Invalid merkle root");
         require(!isSpent(args.inputNullifier), "Input is already spent");
         require(args.checkpointTime <= block.timestamp, "Early withdraw");
@@ -177,15 +147,10 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
 
         nullifierHashes[args.inputNullifier] = true;
 
-        token.withdraw(extData.withdrawAmount);
-        (bool success, ) = payable(extData.recipient).call{value: uint256(extData.withdrawAmount)}(
-            ""
-        );
-        require(success, "Failed to send funds");
-        // token.transfer(extData.recipient, uint256(extData.withdrawAmount));
+        token.safeTransfer(extData.recipient, uint256(extData.withdrawAmount));
 
         if (extData.fee > 0) {
-            token.transfer(extData.relayer, extData.fee);
+            token.safeTransfer(extData.relayer, extData.fee);
         }
 
         uint32 index = _insert(args.outputCommitment);
@@ -194,10 +159,10 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
         emit NewNullifier(args.inputNullifier);
     }
 
-    function _transactRevoke(RevokeProofArgs calldata args, ExtData calldata extData)
-        internal
-        nonReentrant
-    {
+    function _transactRevoke(
+        DataTypes.RevokeProofArgs calldata args,
+        DataTypes.ExtData calldata extData
+    ) internal nonReentrant {
         require(isKnownRoot(args.root), "Invalid merkle root");
         require(!isSpent(args.inputNullifier), "Input is already spent");
         require(args.stopTime >= block.timestamp, "Early revoke");
@@ -213,15 +178,11 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
         require(verifyRevokeProof(args), "Invalid transaction proof");
 
         nullifierHashes[args.inputNullifier] = true;
-        token.withdraw(extData.withdrawAmount);
-        (bool success, ) = payable(extData.recipient).call{value: uint256(extData.withdrawAmount)}(
-            ""
-        );
-        require(success, "Failed to send funds");
-        // token.transfer(extData.recipient, uint256(extData.withdrawAmount));
+
+        token.safeTransfer(extData.recipient, uint256(extData.withdrawAmount));
 
         if (extData.fee > 0) {
-            token.transfer(extData.relayer, extData.fee);
+            token.safeTransfer(extData.relayer, extData.fee);
         }
 
         uint32 index = _insert(args.outputCommitment);
@@ -229,6 +190,4 @@ contract Tsunami is MerkleTree, ReentrancyGuard {
         emit NewCommitment(args.outputCommitment, index, extData.encryptedOutput);
         emit NewNullifier(args.inputNullifier);
     }
-
-    receive() external payable {}
 }

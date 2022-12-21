@@ -6,6 +6,8 @@ import { poseidonHash } from './snark';
 
 export const calculateTotalStreamAmount = (rate: number, startTime: Date, endTime: Date) => {
   const secondsDiff = dayjs(endTime).diff(dayjs(startTime), 'second');
+  // console.log({ rate });
+
   const ethAmount = parseEther(`${rate}`).mul(secondsDiff);
   return formatEther(ethAmount);
 };

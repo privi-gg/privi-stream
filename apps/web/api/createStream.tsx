@@ -3,12 +3,13 @@ import { useContractWrite, useWaitForTransaction } from 'wagmi';
 import tsunami from 'abi/tsunami.json';
 import logger from 'utils/logger';
 import { BigNumber } from 'ethers';
-import { tsunamiAddress } from 'config/network';
+import useInstance from 'hooks/instance';
 
 export const useCreateStream = () => {
+  const { instance } = useInstance();
   const txRes = useContractWrite({
     mode: 'recklesslyUnprepared',
-    address: tsunamiAddress,
+    address: instance.instanceAddress,
     abi: tsunami.abi,
     functionName: 'create',
     overrides: {

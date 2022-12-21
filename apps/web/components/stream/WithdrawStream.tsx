@@ -1,6 +1,6 @@
 import { FC, useState } from 'react';
 import { Button, HStack, Input, StackProps, Text, VStack } from '@chakra-ui/react';
-import { isDev, rpcUrlGoerli } from 'config/env';
+import { isDev, rpcGoerli } from 'config/env';
 import { useRegistrarContract, useTsunamiContract } from 'hooks/contracts';
 import { useAccount, useProvider } from 'wagmi';
 import { Utxo } from '@tsunami/utils';
@@ -127,7 +127,7 @@ const WithdrawStream: FC<StackProps> = ({ ...props }) => {
   };
 
   const runTest = async (args: any, extData: any) => {
-    const provider = new providers.JsonRpcProvider(rpcUrlGoerli);
+    const provider = new providers.JsonRpcProvider(rpcGoerli);
     const wallet = new Wallet(
       '0x125f637a1047221090a4e49d71b1d5a98208e44451478b20e4df05d84946e7d3',
       provider,

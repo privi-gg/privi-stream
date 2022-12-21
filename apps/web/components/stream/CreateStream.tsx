@@ -8,17 +8,16 @@ import dayjs from 'dayjs';
 import logger from 'utils/logger';
 import { useAccount } from 'wagmi';
 import { useShieldedAccount } from 'contexts/shieldedAccount';
-import { isDev, rpcUrlGoerli } from 'config/env';
+import { isDev, rpcGnosisChiado, rpcGoerli } from 'config/env';
 import { useCreateStream } from 'api/createStream';
 import { BN } from 'utils/eth';
-import { KeyPair } from '@tsunami/utils';
 import { prepareProposal } from 'utils/proofs';
 import { calculateTotalStreamAmount } from 'utils/stream';
 import { useRegistrarContract } from 'hooks/contracts';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
 import { Contract, providers, Wallet } from 'ethers';
-import { tsunamiAddress } from 'config/network';
 import tsunami from 'abi/tsunami.json';
+import useInstance from 'hooks/instance';
 
 interface ICreateSteamInput {
   rate: number;
@@ -40,6 +39,7 @@ const schema = yup.object().shape({
 const CreateStream: FC<StackProps> = ({ ...props }) => {
   const [isLoading, setLoading] = useState(false);
   const registrarContract = useRegistrarContract();
+  const { instanceAddress } = useInstance();
   const { address } = useAccount();
   const { keyPair: senderKeyPair } = useShieldedAccount();
   const { control, handleSubmit, watch } = useForm<ICreateSteamInput>({
@@ -99,31 +99,31 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
 
     console.log(`Proposal proof generated!`);
 
-    await createStream?.({
-      ...data,
-      recklesslySetUnpreparedArgs: [proofArgs, encryptedOutput],
-      recklesslySetUnpreparedOverrides: { value: BN(proofArgs.amount), gasLimit: BN(2_000_000) },
-    });
-    // await run(proofArgs, encryptedOutput);
+    // await createStream?.({
+    //   ...data,
+    //   recklesslySetUnpreparedArgs: [proofArgs, encryptedOutput],
+    //   recklesslySetUnpreparedOverrides: { value: BN(proofArgs.amount), gasLimit: BN(2_000_000) },
+    // });
+    await runTest(proofArgs, encryptedOutput);
 
     return true;
   };
 
   const runTest = async (args: any, eo: any) => {
-    const provider = new providers.JsonRpcProvider(rpcUrlGoerli);
+    const provider = new providers.JsonRpcProvider(rpcGoerli);
     const wallet = new Wallet(
       '0x125f637a1047221090a4e49d71b1d5a98208e44451478b20e4df05d84946e7d3',
       provider,
     );
     console.log({ addr: wallet.address });
 
-    console.log('Simulating');
+    console.log('Simulating', instanceAddress);
 
-    const pool = new Contract(tsunamiAddress, tsunami.abi, wallet);
+    const pool = new Contract(instanceAddress, tsunami.abi, wallet);
 
     const tx = await pool.callStatic.create(args, eo, {
       value: BN(args.amount),
-      gasLimit: 2_000_000,
+      gasLimit: BN(500_000),
     });
     console.log('Sent tx');
     console.log(tx);

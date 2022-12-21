@@ -51,7 +51,7 @@ export async function prepareProposal({ startTime, stopTime, rate, keyPairs }: a
     checkpointTime: dayjs(startTime).unix(),
     rate: parseEther(`${rate}`),
     senderKeyPair: keyPairs.sender,
-    receiverKeyPair: keyPairs.receiver,
+    leafIndex: keyPairs.receiver,
   });
 
   const { proofArgs, encryptedOutput } = await prepareProposalProof({
