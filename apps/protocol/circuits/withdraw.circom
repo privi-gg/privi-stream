@@ -5,8 +5,7 @@ include "../../../node_modules/circomlib/circuits/poseidon.circom";
 include "./merkleProof.circom";
 include "./keyPair.circom";
 
-
-// UTXO { amount, startTime, stopTime, checkpointTime rate,
+// UTXO { rate, startTime, stopTime, checkpointTime,
 //        senderPubKey, receiverPubKey, blinding }
 // commitment = hash(UTXO)
 // nullifier = hash(commitment, merklePath)
@@ -19,14 +18,14 @@ template Withdraw(nLevels, zeroLeaf) {
     // ===========================================
     // INPUT UTXO SIGNALS
     // ===========================================
-    signal input inAmount;
+    signal input inRate; // tokens per sec.
     signal input inStartTime;
     signal input inStopTime;
     signal input inCheckpointTime;
-    signal input inRate; // tokens per sec.
     signal input inSenderPublicKey;
     signal input inReceiverPrivateKey;
     signal input inBlinding; 
+
     signal input inputNullifier; 
     signal input inPathIndices; 
     signal input inPathElements[nLevels]; 
@@ -66,15 +65,14 @@ template Withdraw(nLevels, zeroLeaf) {
     component inReceiverKeyPair = KeyPair();
     inReceiverKeyPair.privateKey <== inReceiverPrivateKey;
 
-    component inCommitmentHasher = Poseidon(8);
-    inCommitmentHasher.inputs[0] <== inAmount;
+    component inCommitmentHasher = Poseidon(7);
+    inCommitmentHasher.inputs[0] <== inRate;
     inCommitmentHasher.inputs[1] <== inStartTime;
     inCommitmentHasher.inputs[2] <== inStopTime;
     inCommitmentHasher.inputs[3] <== inCheckpointTime;
-    inCommitmentHasher.inputs[4] <== inRate;
-    inCommitmentHasher.inputs[5] <== inSenderPublicKey;
-    inCommitmentHasher.inputs[6] <== inReceiverKeyPair.publicKey;
-    inCommitmentHasher.inputs[7] <== inBlinding;
+    inCommitmentHasher.inputs[4] <== inSenderPublicKey;
+    inCommitmentHasher.inputs[5] <== inReceiverKeyPair.publicKey;
+    inCommitmentHasher.inputs[6] <== inBlinding;
 
     // Asserts correctness of nullifier
     component inNullifierHasher = Poseidon(2);
@@ -95,15 +93,14 @@ template Withdraw(nLevels, zeroLeaf) {
     // ===========================================
     // VERIFY CORRECTNESS OF OUTPUT UTXO
     // ===========================================
-    component outCommitmentHasher = Poseidon(8);
-    outCommitmentHasher.inputs[0] <== inAmount;
+    component outCommitmentHasher = Poseidon(7);
+    outCommitmentHasher.inputs[0] <== inRate;
     outCommitmentHasher.inputs[1] <== inStartTime;
     outCommitmentHasher.inputs[2] <== inStopTime;
     outCommitmentHasher.inputs[3] <== outCheckpointTime;
-    outCommitmentHasher.inputs[4] <== inRate;
-    outCommitmentHasher.inputs[5] <== inSenderPublicKey;
-    outCommitmentHasher.inputs[6] <== inReceiverKeyPair.publicKey;
-    outCommitmentHasher.inputs[7] <== outBlinding;
+    outCommitmentHasher.inputs[4] <== inSenderPublicKey;
+    outCommitmentHasher.inputs[5] <== inReceiverKeyPair.publicKey;
+    outCommitmentHasher.inputs[6] <== outBlinding;
     outCommitmentHasher.out === outputCommitment;
 
     // optional safety constraint to make sure extDataHash cannot be changed
