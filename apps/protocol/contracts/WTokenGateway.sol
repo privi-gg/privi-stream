@@ -14,10 +14,12 @@ contract WTokenGateway {
 
     function create(
         address tsunami,
-        DataTypes.ProposalProofArgs calldata args,
+        DataTypes.CreateProofArgs calldata args,
         bytes calldata encryptedOutput
     ) external payable {
+        require(msg.value == args.publicAmount, "Wrong amount sent");
         wToken.deposit{value: msg.value}();
+        wToken.approve(tsunami, msg.value);
         ITsunami(tsunami).create(args, encryptedOutput);
     }
 
@@ -30,6 +32,7 @@ contract WTokenGateway {
         require(extData.recipient == address(this), "Require recipient to be gateway");
         ITsunami(tsunami).withdraw(args, extData);
         uint256 withdrawAmount = uint256(extData.withdrawAmount);
+        wToken.approve(address(wToken), withdrawAmount);
         wToken.withdraw(withdrawAmount);
         _safeTransferETH(unwrappedTokenReceiver, withdrawAmount);
     }
@@ -43,6 +46,7 @@ contract WTokenGateway {
         require(extData.recipient == address(this), "Require recipient to be gateway");
         ITsunami(tsunami).revoke(args, extData);
         uint256 withdrawAmount = uint256(extData.withdrawAmount);
+        wToken.approve(address(wToken), withdrawAmount);
         wToken.withdraw(withdrawAmount);
         _safeTransferETH(unwrappedTokenReceiver, withdrawAmount);
     }
@@ -51,4 +55,6 @@ contract WTokenGateway {
         (bool success, ) = to.call{value: value}(new bytes(0));
         require(success, "ETH_TRANSFER_FAILED");
     }
+
+    receive() external payable {}
 }
