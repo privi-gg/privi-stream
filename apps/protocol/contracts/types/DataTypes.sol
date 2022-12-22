@@ -36,9 +36,9 @@ library DataTypes {
         uint256 stopTime;
     }
 
-    struct ProposalProofArgs {
+    struct CreateProofArgs {
         Proof proof;
-        uint256 amount;
         bytes32 commitment;
+        uint256 publicAmount;
     }
 }
