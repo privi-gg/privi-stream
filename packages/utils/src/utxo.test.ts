@@ -4,11 +4,11 @@ import { utils } from 'ethers';
 import { KeyPair } from './keyPair';
 import { Utxo } from './utxo';
 
-describe.only('Utxo', function () {
+describe('Utxo', function () {
   const createUtxo = (senderKeyPair: KeyPair, receiverKeyPair: KeyPair) => {
     const duration = 30 * 24 * 60 * 60;
     const rate = utils.parseEther('0.00001');
-    const startTime = Date.now();
+    const startTime = Math.round(Date.now());
     const stopTime = startTime + duration;
     const checkpointTime = startTime + duration / 2;
 
@@ -26,7 +26,7 @@ describe.only('Utxo', function () {
     const [senderKeyPair, receiverKeyPair] = KeyPair.createRandomPairs();
     const duration = 30 * 24 * 60 * 60;
     const rate = utils.parseEther('0.00001');
-    const startTime = Date.now();
+    const startTime = Math.round(Date.now());
     const stopTime = startTime + duration;
     const checkpointTime = startTime + duration / 2;
 
@@ -41,6 +41,10 @@ describe.only('Utxo', function () {
           receiverKeyPair,
         }),
     ).to.not.throw();
+
+    const utxo = createUtxo(senderKeyPair, receiverKeyPair);
+
+    expect(utxo.amount.toString()).to.equal(rate.mul(utxo.stopTime - utxo.startTime).toString());
   });
 
   it('should encrypt', () => {
@@ -113,5 +117,38 @@ describe.only('Utxo', function () {
     expect(utxo2.startTime).to.equal(originalUtxo.startTime);
     expect(utxo2.stopTime).to.equal(originalUtxo.stopTime);
     expect(utxo2.checkpointTime).to.equal(originalUtxo.checkpointTime);
+  });
+
+  it('should withdraw correctly', () => {
+    const [senderKeyPair, receiverKeyPair] = KeyPair.createRandomPairs();
+    const utxo = createUtxo(senderKeyPair, receiverKeyPair);
+
+    expect(() => utxo.withdraw(utxo.checkpointTime - 1000)).to.throw();
+
+    const newCheckpointTime = utxo.checkpointTime + 1000;
+    const newUtxo = utxo.withdraw(newCheckpointTime);
+
+    expect(newUtxo.rate.eq(utxo.rate)).to.be.true;
+    expect(newUtxo.startTime).to.equal(utxo.startTime);
+    expect(newUtxo.stopTime).to.equal(utxo.stopTime);
+    expect(newUtxo.checkpointTime).to.equal(newCheckpointTime);
+    expect(newUtxo.amount.eq(utxo.rate.mul(utxo.stopTime - utxo.startTime))).to.be.true;
+  });
+
+  it('should revoke correctly', () => {
+    const [senderKeyPair, receiverKeyPair] = KeyPair.createRandomPairs();
+    const utxo = createUtxo(senderKeyPair, receiverKeyPair);
+
+    expect(() => utxo.revoke(utxo.stopTime + 1000)).to.throw();
+    expect(() => utxo.revoke(utxo.checkpointTime - 1000)).to.throw();
+
+    const newStopTime = utxo.stopTime - 1000;
+    const newUtxo = utxo.revoke(newStopTime);
+
+    expect(newUtxo.rate.eq(utxo.rate)).to.be.true;
+    expect(newUtxo.startTime).to.equal(utxo.startTime);
+    expect(newUtxo.stopTime).to.equal(newStopTime);
+    expect(newUtxo.checkpointTime).to.equal(utxo.checkpointTime);
+    expect(newUtxo.amount.eq(utxo.rate.mul(newStopTime - utxo.startTime))).to.be.true;
   });
 });

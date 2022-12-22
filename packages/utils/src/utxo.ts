@@ -11,6 +11,7 @@ export class Utxo {
   senderKeyPair: KeyPair;
   receiverKeyPair: KeyPair;
   leafIndex?: number;
+  private _amount?: BigNumber;
   private _commitment?: string;
   private _nullifier?: string;
 
@@ -33,6 +34,14 @@ export class Utxo {
     blinding?: BigNumberish;
     leafIndex?: number;
   }) {
+    if (stopTime <= startTime) {
+      throw new Error('Stop time must be greater than start time');
+    }
+
+    if (checkpointTime < startTime || checkpointTime > stopTime) {
+      throw new Error('Checkpoint time must be between start and stop time');
+    }
+
     this.rate = BigNumber.from(rate);
     this.startTime = startTime;
     this.stopTime = stopTime;
@@ -41,6 +50,13 @@ export class Utxo {
     this.senderKeyPair = senderKeyPair;
     this.receiverKeyPair = receiverKeyPair;
     this.leafIndex = leafIndex;
+  }
+
+  get amount() {
+    if (!this._amount) {
+      this._amount = this.rate.mul(this.stopTime - this.startTime);
+    }
+    return this._amount;
   }
 
   /**
@@ -67,12 +83,50 @@ export class Utxo {
   get nullifier() {
     if (!this._nullifier) {
       if (!isFinite(this.leafIndex as number)) {
-        throw new Error('Can not compute nullifier without utxo index or private key');
+        throw new Error('Cannot compute nullifier without utxo index or private key');
       }
 
       this._nullifier = poseidonHash(this.commitment, this.leafIndex as number);
     }
     return this._nullifier;
+  }
+
+  withdraw(outputCheckpointTime: number) {
+    if (outputCheckpointTime <= this.checkpointTime) {
+      throw new Error('Output checkpoint time must be greater than input checkpoint time');
+    }
+
+    const output = new Utxo({
+      rate: this.rate,
+      startTime: this.startTime,
+      stopTime: this.stopTime,
+      checkpointTime: outputCheckpointTime,
+      senderKeyPair: this.senderKeyPair,
+      receiverKeyPair: this.receiverKeyPair,
+    });
+
+    return output;
+  }
+
+  revoke(outputStopTime: number) {
+    if (outputStopTime >= this.stopTime) {
+      throw new Error('Output stop time must be less than input stop time');
+    }
+
+    if (outputStopTime <= this.checkpointTime) {
+      throw new Error('Output stop time must be greater than input checkpoint time');
+    }
+
+    const output = new Utxo({
+      rate: this.rate,
+      startTime: this.startTime,
+      stopTime: outputStopTime,
+      checkpointTime: this.checkpointTime,
+      senderKeyPair: this.senderKeyPair,
+      receiverKeyPair: this.receiverKeyPair,
+    });
+
+    return output;
   }
 
   /**
