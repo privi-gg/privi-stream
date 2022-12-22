@@ -40,11 +40,11 @@ contract Tsunami is ITsunami, MerkleTree, ReentrancyGuard {
         maxDepositAmount = maxDepositAmount_;
     }
 
-    function create(DataTypes.ProposalProofArgs calldata args, bytes calldata encryptedOutput)
+    function create(DataTypes.CreateProofArgs calldata args, bytes calldata encryptedOutput)
         external
     {
         require(verifyCreateProof(args), "Invalid create proof");
-        token.safeTransferFrom(msg.sender, address(this), args.amount);
+        token.safeTransferFrom(msg.sender, address(this), args.publicAmount);
         uint32 index = _insert(args.commitment);
         emit NewCommitment(args.commitment, index, encryptedOutput);
     }
@@ -75,17 +75,13 @@ contract Tsunami is ITsunami, MerkleTree, ReentrancyGuard {
         return withdrawAmount + fee;
     }
 
-    function verifyCreateProof(DataTypes.ProposalProofArgs calldata args)
-        public
-        view
-        returns (bool)
-    {
+    function verifyCreateProof(DataTypes.CreateProofArgs calldata args) public view returns (bool) {
         return
             createVerifier.verifyProof(
                 args.proof.a,
                 args.proof.b,
                 args.proof.c,
-                [args.amount, uint256(args.commitment)]
+                [args.publicAmount, uint256(args.commitment)]
             );
     }
 
