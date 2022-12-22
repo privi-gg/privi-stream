@@ -4,7 +4,7 @@ import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import { KeyPair } from '@tsunami/utils';
 import { deployContract } from './helpers/utils';
 
-describe.skip('Registrar', function () {
+describe('Registrar', function () {
   async function fixture() {
     const registrar = await deployContract('Registrar');
     return { registrar };
