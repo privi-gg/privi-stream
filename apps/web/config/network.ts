@@ -11,6 +11,7 @@ export type Instance = {
 
 export type InstanceConfig = {
   rpcUrl: string;
+  wTokenGateway: string;
   instances: {
     [token: string]: Instance;
   };
@@ -29,6 +30,7 @@ export const instanceConfig: Record<number, InstanceConfig> = {
   // Goerli instances
   [chains.GOERLI]: {
     rpcUrl: rpcGoerli,
+    wTokenGateway: '0x8e9b9c5f9f5b1b9e5e1c1e5b1b9e5e1c1e5b1b9e',
     instances: {
       weth: {
         currency: 'ETH',
@@ -45,6 +47,7 @@ export const instanceConfig: Record<number, InstanceConfig> = {
   // Polygon Mumbai instances
   [chains.POLYGON_MUMBAI]: {
     rpcUrl: rpcPolygonMumbai,
+    wTokenGateway: '0x8e9b9c5f9f5b1b9e5e1c1e5b1b9e5e1c1e5b1b9e',
     instances: {
       wmatic: {
         currency: 'MATIC',
@@ -61,11 +64,12 @@ export const instanceConfig: Record<number, InstanceConfig> = {
   // Gnosis Chiado instances
   [chains.GNOSIS_CHIADO]: {
     rpcUrl: rpcGnosisChiado,
+    wTokenGateway: '0x91FDa51817e26f174cf9F41B26ceaFdeA95F0e42',
     instances: {
       wxdai: {
         currency: 'xDAI',
         decimals: 18,
-        instanceAddress: '0x0F3aE2a8AFA1c7e2c5069aA90169063aEd4516FE',
+        instanceAddress: '0x160c3dF382531dbF9eA391F32fB13AACc7B34C30',
         deployedBlock: 0,
         treeHeight: 20,
         zeroElement:
@@ -77,6 +81,7 @@ export const instanceConfig: Record<number, InstanceConfig> = {
   // Shardeum Liberty20 instances
   [chains.SHARDEUM_LIBERTY20]: {
     rpcUrl: rpcShardeumLiberty20,
+    wTokenGateway: '0x8e9b9c5f9f5b1b9e5e1c1e5b1b9e5e1c1e5b1b9e',
     instances: {
       wshm: {
         currency: 'SHM',

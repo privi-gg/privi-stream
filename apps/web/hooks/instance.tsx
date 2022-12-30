@@ -8,6 +8,7 @@ export type InstanceInfo = {
   rpcUrl: string;
   instance: Instance;
   instanceAddress: string;
+  wTokenGatewayAddress: string;
 };
 
 const supportedChains = Object.values(chains);
@@ -31,6 +32,7 @@ const useInstance = () => {
       token,
       instanceAddress: instance.instanceAddress,
       instance,
+      wTokenGatewayAddress: config.wTokenGateway,
     };
   }, [chain]);
 
