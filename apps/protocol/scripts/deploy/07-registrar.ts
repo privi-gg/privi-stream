@@ -3,12 +3,7 @@ import { DeployFunction } from 'hardhat-deploy/types';
 
 const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts } = hre;
-  const { deploy, get } = deployments;
-
-  const { address: hasherAddress } = await get('hasher');
-  const { address: createVerifierAddress } = await get('hasher');
-  const { address: withdrawVerifierAddress } = await get('hasher');
-  const { address: revokeVerifierAddress } = await get('hasher');
+  const { deploy } = deployments;
 
   const { deployer } = await getNamedAccounts();
 
