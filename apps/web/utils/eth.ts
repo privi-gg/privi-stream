@@ -73,6 +73,6 @@ export const isValidAddress = (address?: string) => {
   return utils.isAddress(address);
 };
 
-export const currentBlockTimestamp = async (provider: any) => {
-  return provider.getBlock('latest').then((block: any) => block.timestamp);
+export const currentBlockTimestamp = async (provider: ethers.providers.BaseProvider) => {
+  return provider.getBlock('latest').then((block) => block.timestamp);
 };
