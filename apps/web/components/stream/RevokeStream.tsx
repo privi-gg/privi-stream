@@ -1,22 +1,24 @@
 import { FC, useState } from 'react';
 import { Button, HStack, Input, StackProps, Text, VStack } from '@chakra-ui/react';
 import { isDev, rpcGoerli } from 'config/env';
-import { useRegistrarContract, useTsunamiContract } from 'hooks/contracts';
+import {
+  useRegistrarContract,
+  useTsunamiContract,
+  useWTokenGatewayContract,
+} from 'hooks/contracts';
 import { useAccount, useProvider } from 'wagmi';
 import { Utxo } from '@tsunami/utils';
 import { useShieldedAccount } from 'contexts/shieldedAccount';
 import { scanStreamUTXOFor } from 'utils/stream';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
-import { useWithdrawStream } from 'api/withdrawStream';
-import WithdrawStreamDetail from './WithdrawStreamDetails';
 import logger from 'utils/logger';
 import { prepareRevoke, prepareWithdraw } from 'utils/proofs';
 import { BN, currentBlockTimestamp, isValidAddress } from 'utils/eth';
 import { Contract, providers, Wallet } from 'ethers';
-import { tsunamiAddress } from 'config/network';
 import tsunami from 'abi/tsunami.json';
 import { useRevokeStream } from 'api/revokeStream';
 import RevokeStreamDetail from './RevokeStreamDetails';
+import useInstance from 'hooks/instance';
 
 const defaultReceiverValue = isDev ? '0x3C6860DA6ED0939AE9f668476ca9B48Bcc4Ea939' : '';
 const defaultRecipientValue = isDev ? '0x80630fBf405eD070F10c8fFE8E9A83C60736a770' : '';
@@ -28,6 +30,8 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
   const [isLoading, setLoading] = useState(false);
   const registrarContract = useRegistrarContract();
   const tsunamiContract = useTsunamiContract();
+  const { instanceAddress, rpcUrl } = useInstance();
+  const wTokenGateway = useWTokenGatewayContract();
   const provider = useProvider();
   const { address } = useAccount();
   const { keyPair: senderKeyPair } = useShieldedAccount();
@@ -60,8 +64,6 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
     const streams = await scanStreamUTXOFor(keyPairs, 'sender', tsunamiContract);
     const streamUtxo = streams?.[0];
     if (!streamUtxo) {
-      // console.log({ streamUtxo });
-
       alert('No stream found for logged in shielded account by given sender!');
       setLoading(false);
       return;
@@ -72,7 +74,7 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
 
   const submit = () => {
     setLoading(true);
-    startWithdraw()
+    startRevoke()
       .then(() => {
         logger.log(`Sent tx`);
       })
@@ -83,21 +85,21 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
       .finally(() => setLoading(false));
   };
 
-  const startWithdraw = async () => {
+  const generateProofArgs = async () => {
     if (!address) {
       alert('Connect wallet first!');
-      return;
+      throw new Error('Not connected');
     }
 
     if (!isValidAddress(recipientAddress)) {
       alert('Invalid fund recipient address!');
-      return;
+      throw new Error('Invalid recipient address');
     }
 
     if (!senderKeyPair) {
       logger.error(`Not logged in!`);
       alert('Log in with your shielded key!');
-      return;
+      throw new Error('Not logged in');
     }
 
     const { keyPair: receiverKeyPair } = await getShieldedAccount(
@@ -112,7 +114,7 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
     const newStopTime = (await currentBlockTimestamp(provider)) + 4 * 60;
     if (streamUtxo && newStopTime >= streamUtxo?.stopTime) {
       alert('Too late to stop stream! Stream ending soon anyway!');
-      return;
+      throw new Error('Too late to stop stream');
     }
 
     const { proofArgs, extData } = await prepareRevoke({
@@ -123,38 +125,52 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
         receiver: receiverKeyPair,
       },
       newStopTime,
-      recipient: recipientAddress,
+      recipient: wTokenGateway.address,
     });
 
-    console.log(`Revoke proof generated!`);
+    return { proofArgs, extData };
+  };
+
+  const startRevoke = async () => {
+    const { proofArgs, extData } = await generateProofArgs();
 
     await revokeStream?.({
       ...data,
-      recklesslySetUnpreparedArgs: [proofArgs, extData],
+      recklesslySetUnpreparedArgs: [instanceAddress, receiverAddress, proofArgs, extData],
       recklesslySetUnpreparedOverrides: { gasLimit: BN(2_000_000) },
     });
-    // await runTest(proofArgs, extData);
 
     return true;
   };
 
-  const runTest = async (args: any, extData: any) => {
-    const provider = new providers.JsonRpcProvider(rpcGoerli);
-    const wallet = new Wallet(
-      '0x125f637a1047221090a4e49d71b1d5a98208e44451478b20e4df05d84946e7d3',
-      provider,
-    );
-    console.log({ addr: wallet.address });
+  const simulateTest = async () => {
+    setLoading(true);
+    try {
+      const { proofArgs, extData } = await generateProofArgs();
+      const provider = new providers.JsonRpcProvider(rpcUrl);
+      const wallet = new Wallet(
+        '0x125f637a1047221090a4e49d71b1d5a98208e44451478b20e4df05d84946e7d3',
+        provider,
+      );
 
-    console.log('Simulating');
+      logger.debug(`Simulating tx...`, rpcUrl);
+      const contract = wTokenGateway.connect(wallet);
 
-    const pool = new Contract(tsunamiAddress, tsunami.abi, wallet);
-
-    const tx = await pool.callStatic.revoke(args, extData, {
-      gasLimit: BN(2_000_000),
-    });
-    console.log('Sent tx');
-    console.log(tx);
+      const tx = await contract.callStatic.revoke(
+        instanceAddress,
+        recipientAddress,
+        proofArgs,
+        extData,
+        {
+          gasLimit: BN(2_000_000),
+        },
+      );
+      logger.debug(`Sent tx:`, tx);
+    } catch (error) {
+      logger.error(`Error:`, error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -182,6 +198,17 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
           <Button onClick={submit} isLoading={isLoading} loadingText="Generating proof...">
             Revoke/Stop Stream
           </Button>
+
+          {isDev && (
+            <Button
+              onClick={simulateTest}
+              isLoading={isLoading}
+              colorScheme="orange"
+              loadingText="Generating proof..."
+            >
+              Test
+            </Button>
+          )}
         </VStack>
       )}
     </VStack>

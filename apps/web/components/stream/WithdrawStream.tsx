@@ -1,7 +1,11 @@
 import { FC, useState } from 'react';
 import { Button, HStack, Input, StackProps, Text, VStack } from '@chakra-ui/react';
 import { isDev, rpcGoerli } from 'config/env';
-import { useRegistrarContract, useTsunamiContract } from 'hooks/contracts';
+import {
+  useRegistrarContract,
+  useTsunamiContract,
+  useWTokenGatewayContract,
+} from 'hooks/contracts';
 import { useAccount, useProvider } from 'wagmi';
 import { Utxo } from '@tsunami/utils';
 import { useShieldedAccount } from 'contexts/shieldedAccount';
@@ -12,9 +16,8 @@ import WithdrawStreamDetail from './WithdrawStreamDetails';
 import logger from 'utils/logger';
 import { prepareWithdraw } from 'utils/proofs';
 import { BN, currentBlockTimestamp, isValidAddress } from 'utils/eth';
-import { Contract, providers, Wallet } from 'ethers';
-import { tsunamiAddress } from 'config/network';
-import tsunami from 'abi/tsunami.json';
+import { providers, Wallet } from 'ethers';
+import useInstance from 'hooks/instance';
 
 const defaultSenderValue = isDev ? '0x80630fBf405eD070F10c8fFE8E9A83C60736a770' : '';
 const defaultRecipientValue = isDev ? '0x80630fBf405eD070F10c8fFE8E9A83C60736a770' : '';
@@ -25,7 +28,9 @@ const WithdrawStream: FC<StackProps> = ({ ...props }) => {
   const [streamUtxo, setStreamUtxo] = useState<Utxo>();
   const [isLoading, setLoading] = useState(false);
   const registrarContract = useRegistrarContract();
+  const { instanceAddress, rpcUrl } = useInstance();
   const tsunamiContract = useTsunamiContract();
+  const wTokenGateway = useWTokenGatewayContract();
   const provider = useProvider();
   const { address } = useAccount();
   const { keyPair: receiverKeyPair } = useShieldedAccount();
@@ -78,21 +83,21 @@ const WithdrawStream: FC<StackProps> = ({ ...props }) => {
       .finally(() => setLoading(false));
   };
 
-  const startWithdraw = async () => {
+  const generateProofArgs = async () => {
     if (!address) {
       alert('Connect wallet first!');
-      return;
+      throw new Error('Not connected');
     }
 
     if (!isValidAddress(recipientAddress)) {
       alert('Invalid fund recipient address!');
-      return;
+      throw new Error('Invalid fund recipient address');
     }
 
     if (!receiverKeyPair) {
       logger.error(`Not logged in!`);
       alert('Log in with your shielded key!');
-      return;
+      throw new Error('Not logged in');
     }
 
     const { keyPair: senderKeyPair } = await getShieldedAccount(senderAddress, registrarContract);
@@ -111,38 +116,51 @@ const WithdrawStream: FC<StackProps> = ({ ...props }) => {
         receiver: receiverKeyPair,
       },
       newCheckpointTime,
-      recipient: recipientAddress,
+      recipient: wTokenGateway.address, // ONLY WHEN USING WTokenGateway
     });
 
-    console.log(`Withdraw proof generated!`);
+    return { proofArgs, extData };
+  };
 
+  const startWithdraw = async () => {
+    const { proofArgs, extData } = await generateProofArgs();
     await withdrawStream?.({
       ...data,
-      recklesslySetUnpreparedArgs: [proofArgs, extData],
+      recklesslySetUnpreparedArgs: [instanceAddress, recipientAddress, proofArgs, extData],
       recklesslySetUnpreparedOverrides: { gasLimit: BN(2_000_000) },
     });
-    // await runTest(proofArgs, extData);
 
     return true;
   };
 
-  const runTest = async (args: any, extData: any) => {
-    const provider = new providers.JsonRpcProvider(rpcGoerli);
-    const wallet = new Wallet(
-      '0x125f637a1047221090a4e49d71b1d5a98208e44451478b20e4df05d84946e7d3',
-      provider,
-    );
-    console.log({ addr: wallet.address });
+  const simulateTest = async () => {
+    setLoading(true);
+    try {
+      const { proofArgs, extData } = await generateProofArgs();
+      const provider = new providers.JsonRpcProvider(rpcUrl);
+      const wallet = new Wallet(
+        '0x125f637a1047221090a4e49d71b1d5a98208e44451478b20e4df05d84946e7d3',
+        provider,
+      );
 
-    console.log('Simulating');
+      logger.debug(`Simulating tx...`, rpcUrl);
+      const contract = wTokenGateway.connect(wallet);
 
-    const pool = new Contract(tsunamiAddress, tsunami.abi, wallet);
-
-    const tx = await pool.callStatic.withdraw(args, extData, {
-      gasLimit: 2_000_000,
-    });
-    console.log('Sent tx');
-    console.log(tx);
+      const tx = await contract.callStatic.withdraw(
+        instanceAddress,
+        recipientAddress,
+        proofArgs,
+        extData,
+        {
+          gasLimit: BN(2_000_000),
+        },
+      );
+      logger.debug(`Sent tx:`, tx);
+    } catch (error) {
+      logger.error(`Error:`, error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -170,6 +188,17 @@ const WithdrawStream: FC<StackProps> = ({ ...props }) => {
           <Button onClick={submit} isLoading={isLoading} loadingText="Generating proof...">
             Withdraw
           </Button>
+
+          {isDev && (
+            <Button
+              onClick={simulateTest}
+              isLoading={isLoading}
+              colorScheme="orange"
+              loadingText="Generating proof..."
+            >
+              Test
+            </Button>
+          )}
         </VStack>
       )}
     </VStack>

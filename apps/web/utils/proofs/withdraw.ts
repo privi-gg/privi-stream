@@ -33,7 +33,7 @@ async function buildMerkleTree(tsunami: Contract) {
   const events = await tsunami.queryFilter(filter, 0);
 
   const leaves = events
-    .sort((a, b) => a.args?.index - b.args?.index)
+    .sort((a, b) => a.args?.leafIndex - b.args?.leafIndex)
     .map((e) => toFixedHex(e.args?.commitment));
   return new MerkleTree(TREE_HEIGHT, leaves, {
     hashFunction: poseidonHash,
@@ -56,12 +56,12 @@ async function generateProof({
   let inputPathElements;
 
   if (input.amount > 0) {
-    input.index = tree.indexOf(toFixedHex(input.commitment));
-    if (input.index < 0) {
+    input.leafIndex = tree.indexOf(toFixedHex(input.commitment));
+    if (input.leafIndex < 0) {
       throw new Error(`Input commitment ${toFixedHex(input.commitment)} was not found`);
     }
-    inputPathIndices = input.index;
-    inputPathElements = tree.path(input.index).pathElements;
+    inputPathIndices = input.leafIndex;
+    inputPathElements = tree.path(input.leafIndex).pathElements;
   } else {
     inputPathIndices = 0;
     inputPathElements = new Array(tree.levels).fill(0);
@@ -83,7 +83,6 @@ async function generateProof({
     extDataHash,
     publicAmount,
     // data for transaction inputs
-    inAmount: input.amount,
     inStartTime: input.startTime,
     inStopTime: input.stopTime,
     inCheckpointTime: input.checkpointTime,
@@ -153,16 +152,13 @@ export async function prepareWithdraw({
   keyPairs,
   recipient,
 }: any) {
-  console.log({ keyPairs });
-
   const output = new Utxo({
-    amount: input.amount,
     startTime: input.startTime,
     stopTime: input.stopTime,
-    checkpointTime: newCheckpointTime,
+    checkpointTime: Math.min(newCheckpointTime, input.stopTime),
     rate: input.rate,
     senderKeyPair: keyPairs.sender,
-    leafIndex: keyPairs.receiver,
+    receiverKeyPair: keyPairs.receiver,
   });
 
   const { proofArgs, extData } = await prepareWithdrawProof({ tsunami, input, output, recipient });

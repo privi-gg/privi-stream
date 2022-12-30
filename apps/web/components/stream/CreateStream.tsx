@@ -8,15 +8,14 @@ import dayjs from 'dayjs';
 import logger from 'utils/logger';
 import { useAccount } from 'wagmi';
 import { useShieldedAccount } from 'contexts/shieldedAccount';
-import { isDev, rpcGnosisChiado, rpcGoerli } from 'config/env';
+import { isDev } from 'config/env';
 import { useCreateStream } from 'api/createStream';
 import { BN } from 'utils/eth';
-import { prepareProposal } from 'utils/proofs';
+import { prepareCreate } from 'utils/proofs';
 import { calculateTotalStreamAmount } from 'utils/stream';
-import { useRegistrarContract } from 'hooks/contracts';
+import { useRegistrarContract, useWTokenGatewayContract } from 'hooks/contracts';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
-import { Contract, providers, Wallet } from 'ethers';
-import tsunami from 'abi/tsunami.json';
+import { providers, Wallet } from 'ethers';
 import useInstance from 'hooks/instance';
 
 interface ICreateSteamInput {
@@ -39,10 +38,11 @@ const schema = yup.object().shape({
 const CreateStream: FC<StackProps> = ({ ...props }) => {
   const [isLoading, setLoading] = useState(false);
   const registrarContract = useRegistrarContract();
-  const { instanceAddress } = useInstance();
+  const { instanceAddress, rpcUrl } = useInstance();
+  const wTokenGateway = useWTokenGatewayContract();
   const { address } = useAccount();
   const { keyPair: senderKeyPair } = useShieldedAccount();
-  const { control, handleSubmit, watch } = useForm<ICreateSteamInput>({
+  const { control, handleSubmit, watch, getValues } = useForm<ICreateSteamInput>({
     resolver: yupResolver(schema),
     defaultValues: {
       rate: 0.00001,
@@ -58,6 +58,7 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
   const submit = (data: ICreateSteamInput) => {
     logger.info(`Submitted:`, data);
     setLoading(true);
+    // simulateTest(data)
     startCreation(data)
       .then(() => {
         logger.log(`Sent tx`);
@@ -69,15 +70,15 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
       .finally(() => setLoading(false));
   };
 
-  const startCreation = async (data: ICreateSteamInput) => {
+  const generateProofArgs = async (data: ICreateSteamInput) => {
     if (!address) {
       alert('Connect wallet first!');
-      return;
+      throw new Error('Not connected');
     }
     if (!senderKeyPair) {
       logger.error(`Not logged in!`);
       alert('Log in with your shielded key!');
-      return;
+      throw new Error('Not logged in');
     }
 
     const { keyPair: receiverKeyPair } = await getShieldedAccount(
@@ -89,7 +90,7 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
       throw new Error('Receiver not registered');
     }
 
-    const { proofArgs, encryptedOutput } = await prepareProposal({
+    const { proofArgs, encryptedOutput } = await prepareCreate({
       ...data,
       keyPairs: {
         sender: senderKeyPair,
@@ -97,36 +98,48 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
       },
     });
 
-    console.log(`Proposal proof generated!`);
+    return { proofArgs, encryptedOutput };
+  };
 
-    // await createStream?.({
-    //   ...data,
-    //   recklesslySetUnpreparedArgs: [proofArgs, encryptedOutput],
-    //   recklesslySetUnpreparedOverrides: { value: BN(proofArgs.amount), gasLimit: BN(2_000_000) },
-    // });
-    await runTest(proofArgs, encryptedOutput);
+  const startCreation = async (data: ICreateSteamInput) => {
+    const { proofArgs, encryptedOutput } = await generateProofArgs(data);
+
+    await createStream?.({
+      ...data,
+      recklesslySetUnpreparedArgs: [instanceAddress, proofArgs, encryptedOutput],
+      recklesslySetUnpreparedOverrides: {
+        value: BN(proofArgs.publicAmount),
+        gasLimit: BN(2_000_000),
+      },
+    });
 
     return true;
   };
 
-  const runTest = async (args: any, eo: any) => {
-    const provider = new providers.JsonRpcProvider(rpcGoerli);
-    const wallet = new Wallet(
-      '0x125f637a1047221090a4e49d71b1d5a98208e44451478b20e4df05d84946e7d3',
-      provider,
-    );
-    console.log({ addr: wallet.address });
+  const simulateTest = async () => {
+    setLoading(true);
+    try {
+      const data = getValues();
+      const { proofArgs, encryptedOutput } = await generateProofArgs(data);
+      const provider = new providers.JsonRpcProvider(rpcUrl);
+      const wallet = new Wallet(
+        '0x125f637a1047221090a4e49d71b1d5a98208e44451478b20e4df05d84946e7d3',
+        provider,
+      );
 
-    console.log('Simulating', instanceAddress);
+      logger.debug(`Simulating tx...`, rpcUrl);
+      const contract = wTokenGateway.connect(wallet);
 
-    const pool = new Contract(instanceAddress, tsunami.abi, wallet);
-
-    const tx = await pool.callStatic.create(args, eo, {
-      value: BN(args.amount),
-      gasLimit: BN(500_000),
-    });
-    console.log('Sent tx');
-    console.log(tx);
+      const tx = await contract.callStatic.create(instanceAddress, proofArgs, encryptedOutput, {
+        value: BN(proofArgs.publicAmount),
+        gasLimit: BN(2_000_000),
+      });
+      logger.debug(`Sent tx:`, tx);
+    } catch (error) {
+      logger.error(`Error:`, error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -150,6 +163,17 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
       <Button type="submit" isLoading={isLoading} loadingText="Generating proof...">
         Confirm
       </Button>
+
+      {isDev && (
+        <Button
+          onClick={simulateTest}
+          isLoading={isLoading}
+          colorScheme="orange"
+          loadingText="Generating proof..."
+        >
+          Test
+        </Button>
+      )}
     </VStack>
   );
 };

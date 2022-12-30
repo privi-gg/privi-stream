@@ -19,6 +19,7 @@ import {
 import { formatEther } from 'utils/eth';
 import dayjs from 'dayjs';
 import { useProvider } from 'wagmi';
+import useInstance from 'hooks/instance';
 
 interface IStreamDetailsProps extends StackProps {
   utxo: Utxo;
@@ -28,6 +29,7 @@ const WithdrawStreamDetail: FC<IStreamDetailsProps> = ({ utxo, ...props }) => {
   const [withdrawAmt, setWithdrawAmt] = useState('0');
   const [progress, setProgress] = useState(0);
   const provider = useProvider();
+  const { instance } = useInstance();
 
   useEffect(() => {
     if (!utxo) return;
@@ -39,7 +41,8 @@ const WithdrawStreamDetail: FC<IStreamDetailsProps> = ({ utxo, ...props }) => {
         if (currentTime <= utxo.checkpointTime) {
           setWithdrawAmt('0');
         } else {
-          const amt = utxo.rate.mul(currentTime - utxo.checkpointTime);
+          const min = Math.min(currentTime, utxo.stopTime);
+          const amt = utxo.rate.mul(min - utxo.checkpointTime);
           const amtEth = formatEther(amt);
           setWithdrawAmt(amtEth);
         }
@@ -80,7 +83,9 @@ const WithdrawStreamDetail: FC<IStreamDetailsProps> = ({ utxo, ...props }) => {
           <Tbody>
             <Tr>
               <Td>Total Stream Amount</Td>
-              <Td>{amount} ETH</Td>
+              <Td>
+                {amount} {instance.currency}
+              </Td>
             </Tr>
             <Tr>
               <Td>Start Time</Td>
@@ -96,7 +101,9 @@ const WithdrawStreamDetail: FC<IStreamDetailsProps> = ({ utxo, ...props }) => {
             </Tr>
             <Tr>
               <Td>Rate</Td>
-              <Td>{rate} ETH/sec</Td>
+              <Td>
+                {rate} {instance.currency}/sec
+              </Td>
             </Tr>
           </Tbody>
         </Table>
@@ -104,7 +111,7 @@ const WithdrawStreamDetail: FC<IStreamDetailsProps> = ({ utxo, ...props }) => {
       <Box>
         You can withdraw :
         <Text fontWeight="bold" color="green.500">
-          {withdrawAmt} ETH
+          {withdrawAmt} {instance.currency}
         </Text>
         from this stream
       </Box>
