@@ -1,5 +1,5 @@
 import '@rainbow-me/rainbowkit/styles.css';
-import '@fontsource/anonymous-pro/400.css';
+import '@fontsource/space-grotesk';
 
 import { useEffect, useState } from 'react';
 import type { AppProps } from 'next/app';
