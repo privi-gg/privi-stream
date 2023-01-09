@@ -8,3 +8,6 @@ export const rpcShardeumLiberty20 = process.env.NEXT_PUBLIC_RPC_SHARDEUM_LIBERTY
 
 export const keyAlchemyGoerli = rpcGoerli.split('/').pop() as string;
 export const keyAlchemyMumbai = rpcPolygonMumbai.split('/').pop() as string;
+
+export const testPrivateKey =
+  env === 'development' ? (process.env.NEXT_PUBLIC_TEST_PRIVATE_KEY as string) : '';
