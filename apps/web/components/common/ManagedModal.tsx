@@ -10,8 +10,7 @@ const ManagedModal: React.FC = () => {
     <Modal isOpen={isModalOpen} onClose={closeModal} size="md">
       <ModalOverlay />
       <ModalContent>
-        <ModalCloseButton />
-        <ModalBody p={8}>
+        <ModalBody p={0}>
           {modalView === 'ACCOUNT_REGISTER' && <AccountRegister />}
           {modalView === 'ACCOUNT_LOGIN' && <AccountLogIn />}
           {/* {modalView === 'VIEW_2' && <VIEW2 />} */}

@@ -1,6 +1,10 @@
 import {
+  Box,
   Button,
+  Checkbox,
+  Divider,
   Heading,
+  HStack,
   StackProps,
   Text,
   Textarea,
@@ -8,6 +12,8 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { useRegisterAccount } from 'api/registerAccount';
+import { CopyIcon, DownloadIcon } from 'components/icons';
+import { APP_NAME } from 'config/constants';
 import { useUI } from 'contexts/ui';
 import { FC, useEffect, useState } from 'react';
 import logger from 'utils/logger';
@@ -17,6 +23,7 @@ const AccountRegister: FC<StackProps> = ({ ...props }) => {
   const { modalData, closeModal } = useUI();
   const [privateKey, setPrivateKey] = useState<string>('');
   const { hasCopied, onCopy } = useClipboard(privateKey);
+  const [isAgreed, setIsAgreed] = useState(false);
   const { data: tx, error: txError, isLoading, isSuccess, write: register } = useRegisterAccount();
 
   useEffect(() => {
@@ -44,18 +51,53 @@ const AccountRegister: FC<StackProps> = ({ ...props }) => {
   };
 
   return (
-    <VStack alignItems="stretch" spacing={6} {...props}>
-      <Heading textAlign="center">Register Account</Heading>
-      <VStack alignItems="stretch">
-        <Text textAlign="center">Backup your private key and register your account on pool.</Text>
-        <Textarea value={privateKey} noOfLines={10} readOnly />
-        <Button alignSelf="flex-end" onClick={onCopy}>
-          {hasCopied ? 'Copied!' : 'Copy'}
+    <VStack alignItems="stretch" spacing={6} py={8} {...props}>
+      <Heading textAlign="center" fontSize="xl">
+        Back up Shielded Private Key
+      </Heading>
+      <Divider />
+
+      <Box px={8}>
+        <VStack alignItems="stretch">
+          <Text color="gray.500">
+            To access your account in the future, it is important to back up your shielded key. DO
+            NOT reveal your key to anyone, including the {APP_NAME} developers.
+          </Text>
+          {/* <Textarea value={privateKey} noOfLines={10} readOnly /> */}
+          <HStack justify="space-around" py={4} spacing={4}>
+            <Button leftIcon={<DownloadIcon />} flex={1}>
+              Download
+            </Button>
+            <Button
+              leftIcon={<CopyIcon />}
+              colorScheme="gray"
+              alignSelf="flex-end"
+              variant="outline"
+              onClick={onCopy}
+              flex={1}
+            >
+              {hasCopied ? 'Copied!' : 'Copy'}
+            </Button>
+          </HStack>
+        </VStack>
+
+        <Box py={2}>
+          <Checkbox isChecked={isAgreed} onChange={() => setIsAgreed(!isAgreed)}>
+            I backed up Shielded Private Key
+          </Checkbox>
+        </Box>
+
+        <Button
+          w="full"
+          mt={8}
+          onClick={handleRegister}
+          isLoading={isLoading}
+          disabled={!isAgreed}
+          alignSelf="stretch"
+        >
+          Register
         </Button>
-      </VStack>
-      <Button onClick={handleRegister} isLoading={isLoading}>
-        Register
-      </Button>
+      </Box>
     </VStack>
   );
 };
