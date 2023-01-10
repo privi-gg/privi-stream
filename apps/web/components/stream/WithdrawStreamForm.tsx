@@ -17,7 +17,7 @@ import { useShieldedAccount } from 'contexts/shieldedAccount';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
 import { ChevronRightIcon } from 'components/icons';
 import logger from 'utils/logger';
-import { BN, latestBlockTimestamp, isValidAddress, formatEther, formatUnits } from 'utils/eth';
+import { BN, latestBlockTimestamp, isValidAddress, formatUnits } from 'utils/eth';
 import { useWithdrawStream } from 'api/withdrawStream';
 import { prepareWithdraw } from 'utils/proofs';
 import { Wallet } from 'ethers';
@@ -168,16 +168,15 @@ const WithdrawStreamForm: FC<IWithdrawStreamFormProps> = ({ stream, senderAddres
     }
   };
 
-  const lastWithdrawTime =
-    stream.startTime === stream.checkpointTime ? undefined : stream.checkpointTime;
+  const lastWithdrawTime = stream.startTime === stream.checkpointTime ? 0 : stream.checkpointTime;
 
   return (
     <VStack bgColor="primary.50" p={8} alignItems="stretch" rounded="md" spacing={8} {...props}>
       <VStack alignItems="stretch" spacing={8}>
         <HStack justify="space-between">
           <Text color="gray.500">Last Withdraw Time</Text>
-          {lastWithdrawTime ? (
-            <Text fontWeight="bold">{formatDate(lastWithdrawTime as number)}</Text>
+          {lastWithdrawTime > 0 ? (
+            <Text fontWeight="bold">{formatDate(lastWithdrawTime * 1000)}</Text>
           ) : (
             <Text fontSize="sm" fontWeight="bold" p={2} rounded="3xl" bg="gray.300">
               Haven&apos;t withdrawn anything yet
