@@ -7,6 +7,7 @@ export type Instance = {
   treeHeight: number;
   zeroElement: string;
   currency: string;
+  iconUrl: string;
 };
 
 export type InstanceConfig = {
@@ -40,6 +41,7 @@ export const instanceConfig: Record<number, InstanceConfig> = {
         treeHeight: 20,
         zeroElement:
           '21663839004416932945382355908790599225266501822907911457504978515578255421292',
+        iconUrl: '/images/eth.png',
       },
     },
   },
@@ -57,6 +59,7 @@ export const instanceConfig: Record<number, InstanceConfig> = {
         treeHeight: 20,
         zeroElement:
           '21663839004416932945382355908790599225266501822907911457504978515578255421292',
+        iconUrl: '/images/matic.png',
       },
     },
   },
@@ -74,6 +77,7 @@ export const instanceConfig: Record<number, InstanceConfig> = {
         treeHeight: 20,
         zeroElement:
           '21663839004416932945382355908790599225266501822907911457504978515578255421292',
+        iconUrl: '/images/dai.png',
       },
     },
   },
@@ -91,6 +95,7 @@ export const instanceConfig: Record<number, InstanceConfig> = {
         treeHeight: 20,
         zeroElement:
           '21663839004416932945382355908790599225266501822907911457504978515578255421292',
+        iconUrl: '/images/eth.png',
       },
     },
   },
