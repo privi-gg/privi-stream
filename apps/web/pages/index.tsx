@@ -1,40 +1,31 @@
-import { Box, Center, Heading, Tab, TabList, TabPanel, TabPanels, Tabs } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Center,
+  Heading,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  VStack,
+} from '@chakra-ui/react';
 import { Layout } from 'components/common/layout';
-import { CreateStream, RevokeStream, WithdrawStream } from 'components/stream';
+import { ROUTES } from 'config/constants';
+import { useRouter } from 'next/router';
 import Script from 'next/script';
 import logger from 'utils/logger';
 
 export default function Home() {
+  const router = useRouter();
   return (
     <Layout>
       <Script src="js/snarkjs.min.js" onLoad={() => logger.info('SnarkJs Loaded!')} />
-
-      <Box>
-        <Tabs isFitted>
-          <TabList>
-            <Tab>Create</Tab>
-            <Tab>Withdraw</Tab>
-            <Tab>Revoke</Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel>
-              <Center>
-                <CreateStream maxW={600} />
-              </Center>
-            </TabPanel>
-            <TabPanel>
-              <Center>
-                <WithdrawStream maxW={600} />
-              </Center>
-            </TabPanel>
-            <TabPanel>
-              <Center>
-                <RevokeStream maxW={600} />
-              </Center>
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </Box>
+      <VStack alignItems="stretch" spacing={8} w="sm" mx="auto" my={24}>
+        <Button onClick={() => router.push(ROUTES.CREATE)}>Create Stream</Button>
+        <Button onClick={() => router.push(ROUTES.WITHDRAW)}>Withdraw Stream</Button>
+        <Button onClick={() => router.push(ROUTES.REVOKE)}>Revoke Stream</Button>
+      </VStack>
     </Layout>
   );
 }

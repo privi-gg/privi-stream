@@ -23,11 +23,10 @@ export const poseidonHash = (...inputs: any[]) =>
 
 export const generateSnarkProof = async (inputs: any, circuit: string) => {
   const inp = stringifyBigInts(inputs);
-  const jinp = JSON.stringify(inp);
-  console.log({ inp});
-  console.log({ jinp});
-  
-  
+  // const jinp = JSON.stringify(inp);
+  // console.log({ inp});
+  // console.log({ jinp});
+
   //@ts-ignore
   return snarkjs.groth16.fullProve(
     stringifyBigInts(inputs),
@@ -36,7 +35,7 @@ export const generateSnarkProof = async (inputs: any, circuit: string) => {
   );
 };
 
-export const generateSnarkProofSolidity = async (inputs: any, circuit: string ) => {
+export const generateSnarkProofSolidity = async (inputs: any, circuit: string) => {
   const { proof, publicSignals } = await generateSnarkProof(inputs, circuit);
   const a = [toFixedHex(proof.pi_a[0]), toFixedHex(proof.pi_a[1])];
   const b = [

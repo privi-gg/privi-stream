@@ -5,17 +5,15 @@ import { Utxo, KeyPair } from '@tsunami/utils';
 import { deployHasher } from '../scripts/hasher';
 import { deployContract, randomHex } from './helpers/utils';
 import { TREE_HEIGHT } from './helpers/constants';
-import { prepareProposal, prepareRevoke, prepareWithdraw } from './helpers/proofs';
+import { prepareCreate, prepareRevoke, prepareWithdraw } from './helpers/proofs';
 
 const { utils } = ethers;
 
-describe.only('Tsunami', function () {
+describe('Tsunami', function () {
   async function fixture() {
     const hasher = await deployHasher();
     const token = await deployContract('WETHMock');
-    const proposalVerifier = await deployContract(
-      'contracts/verifiers/CreateVerifier.sol:Verifier',
-    );
+    const createVerifier = await deployContract('contracts/verifiers/CreateVerifier.sol:Verifier');
     const withdrawVerifier = await deployContract(
       'contracts/verifiers/WithdrawVerifier.sol:Verifier',
     );
@@ -28,33 +26,30 @@ describe.only('Tsunami', function () {
       maxDepositAmt,
       token.address,
       hasher.address,
-      proposalVerifier.address,
+      createVerifier.address,
       withdrawVerifier.address,
       revokeVerifier.address,
     );
 
     const amount = utils.parseEther('8000').toString();
-    // await token.deposit({ value: amount });
-    // await token.deposit({ value: amount });
-    // await token.approve(tsunami.address, amount);
+    await token.deposit({ value: amount });
+    await token.approve(tsunami.address, amount);
 
     return { hasher, tsunami, token };
   }
 
-  it('start proposal works', async function () {
+  it('create stream works', async function () {
     const { tsunami, token } = await loadFixture(fixture);
     const [sender, receiver] = await ethers.getSigners();
     const currentTime = await time.latest();
 
     const duration = 10000; // in sec.
-    const rate = utils.parseEther('0.0001'); // wei/sec
+    const rate = utils.parseEther('0.0001');
     const startTime = currentTime;
     const stopTime = startTime + duration;
-    const depositAmount = rate.mul(duration);
     const [senderKeyPair, receiverKeyPair] = KeyPair.createRandomPairs();
 
-    const proposalUtxo = new Utxo({
-      amount: depositAmount,
+    const createUtxo = new Utxo({
       startTime,
       stopTime,
       checkpointTime: startTime,
@@ -63,16 +58,14 @@ describe.only('Tsunami', function () {
       receiverKeyPair,
     });
 
-    const { proofArgs: proposalProofArgs, encryptedOutput } = await prepareProposal({
-      output: proposalUtxo,
+    const { proofArgs: createProofArgs, encryptedOutput } = await prepareCreate({
+      output: createUtxo,
     });
 
-    await tsunami.connect(sender).create(proposalProofArgs, encryptedOutput, {
-      value: depositAmount,
-    });
+    await tsunami.connect(sender).create(createProofArgs, encryptedOutput);
   });
 
-  it('withdraw amount works', async function () {
+  it('withdraw amount from stream works', async function () {
     const { tsunami, token } = await loadFixture(fixture);
     const [sender, receiver] = await ethers.getSigners();
     const currentTime = await time.latest();
@@ -81,11 +74,9 @@ describe.only('Tsunami', function () {
     const rate = utils.parseEther('0.0001'); // wei/sec
     const startTime = currentTime;
     const stopTime = startTime + duration;
-    const depositAmount = rate.mul(duration);
     const [senderKeyPair, receiverKeyPair] = KeyPair.createRandomPairs();
 
-    const proposalUtxo = new Utxo({
-      amount: depositAmount,
+    const createUtxo = new Utxo({
       startTime,
       stopTime,
       checkpointTime: startTime,
@@ -94,38 +85,28 @@ describe.only('Tsunami', function () {
       receiverKeyPair,
     });
 
-    const { proofArgs: proposalProofArgs, encryptedOutput } = await prepareProposal({
-      output: proposalUtxo,
+    const { proofArgs: createProofArgs, encryptedOutput } = await prepareCreate({
+      output: createUtxo,
     });
 
-    await tsunami.connect(sender).create(proposalProofArgs, encryptedOutput, {
-      value: depositAmount,
-    });
+    await tsunami.connect(sender).create(createProofArgs, encryptedOutput);
 
     // 5000 sec passed
     await time.increaseTo(startTime + 5000);
 
-    const withdraw1Duration = 4000;
-    const withdraw1Amount = rate.mul(withdraw1Duration);
-    const checkpoint1Time = startTime + withdraw1Duration;
+    const withdrawDuration = 4000;
+    const withdrawAmount = rate.mul(withdrawDuration);
+    const withdrawCheckpointTime = startTime + withdrawDuration;
     const recipient = randomHex(20);
 
-    const newUtxo1 = new Utxo({
-      amount: proposalUtxo.amount,
-      startTime,
-      stopTime,
-      checkpointTime: checkpoint1Time,
-      rate,
-      senderKeyPair,
-      receiverKeyPair,
-    });
+    const withdrawUtxo = createUtxo.withdraw(withdrawCheckpointTime);
 
     const { proofArgs: proofArgs1, extData: extData1 } = await prepareWithdraw({
-      pool: tsunami,
-      input: proposalUtxo,
-      output: newUtxo1,
+      tsunami,
+      input: createUtxo,
+      output: withdrawUtxo,
       recipient,
-      checkpointTime: checkpoint1Time,
+      checkpointTime: withdrawCheckpointTime,
     });
 
     const spent = await tsunami.isSpent(proofArgs1.inputNullifier);
@@ -133,54 +114,50 @@ describe.only('Tsunami', function () {
 
     await tsunami.withdraw(proofArgs1, extData1);
 
-    const balance1 = await ethers.provider.getBalance(recipient); // await token.balanceOf(recipient);
-    expect(balance1).to.equal(withdraw1Amount);
+    const balance1 = await token.balanceOf(recipient);
+    expect(balance1).to.equal(withdrawAmount);
 
     // 8000 sec passed
     await time.increaseTo(startTime + 8000);
 
     const withdraw2Duration = 3000;
     const withdraw2Amount = rate.mul(withdraw2Duration);
-    const checkpoint2Time = checkpoint1Time + withdraw2Duration;
+    const withdrawCheckpoint2Time = withdrawCheckpointTime + withdraw2Duration;
 
     const newUtxo2 = new Utxo({
-      amount: proposalUtxo.amount,
       startTime,
       stopTime,
-      checkpointTime: checkpoint2Time,
+      checkpointTime: withdrawCheckpoint2Time,
       rate,
       senderKeyPair,
       receiverKeyPair,
     });
 
     const { proofArgs: proofArgs2, extData: extData2 } = await prepareWithdraw({
-      pool: tsunami,
-      input: newUtxo1,
+      tsunami,
+      input: withdrawUtxo,
       output: newUtxo2,
       recipient,
-      checkpointTime: checkpoint2Time,
     });
 
     await tsunami.withdraw(proofArgs2, extData2);
-    const balance2 = await ethers.provider.getBalance(recipient); // await token.balanceOf(recipient);
+    const balance2 = await token.balanceOf(recipient);
     expect(balance2).to.equal(balance1.add(withdraw2Amount));
   });
 
-  it('revoke works', async function () {
+  it('revoke stream works', async function () {
     const { tsunami, token } = await loadFixture(fixture);
     const [sender, receiver] = await ethers.getSigners();
     const currentTime = await time.latest();
 
     const duration = 10000; // in sec.
-    const rate = utils.parseEther('0.0001'); // wei/sec
-    const streamAmount = rate.mul(duration);
+    const rate = utils.parseEther('0.0001');
     const startTime = currentTime;
     const stopTime = startTime + duration;
     const checkpointTime = startTime;
     const [senderKeyPair, receiverKeyPair] = KeyPair.createRandomPairs();
 
-    const proposalUtxo = new Utxo({
-      amount: streamAmount,
+    const createUtxo = new Utxo({
       startTime,
       stopTime,
       checkpointTime,
@@ -189,13 +166,11 @@ describe.only('Tsunami', function () {
       receiverKeyPair,
     });
 
-    const { proofArgs: proposalProofArgs, encryptedOutput } = await prepareProposal({
-      output: proposalUtxo,
+    const { proofArgs: createProofArgs, encryptedOutput } = await prepareCreate({
+      output: createUtxo,
     });
 
-    await tsunami.connect(sender).create(proposalProofArgs, encryptedOutput, {
-      value: streamAmount,
-    });
+    await tsunami.connect(sender).create(createProofArgs, encryptedOutput);
 
     // 5000 sec passed
     await time.increaseTo(startTime + 5000);
@@ -204,26 +179,18 @@ describe.only('Tsunami', function () {
     const senderWithdrawAmount = rate.mul(stopTime - revokeStopTime);
     const senderRecipient = randomHex(20);
 
-    const revokeUtxo = new Utxo({
-      amount: streamAmount,
-      startTime,
-      stopTime: revokeStopTime,
-      checkpointTime,
-      rate,
-      senderKeyPair,
-      receiverKeyPair,
-    });
+    const revokeUtxo = createUtxo.revoke(revokeStopTime);
 
     const { proofArgs: revokeProofArgs, extData: extData } = await prepareRevoke({
-      pool: tsunami,
-      input: proposalUtxo,
+      tsunami,
+      input: createUtxo,
       output: revokeUtxo,
       recipient: senderRecipient,
     });
 
     await tsunami.revoke(revokeProofArgs, extData);
 
-    const balance1 = await ethers.provider.getBalance(senderRecipient); // await token.balanceOf(senderRecipient);
+    const balance1 = await token.balanceOf(senderRecipient);
     expect(balance1).to.equal(senderWithdrawAmount);
 
     // Pass revoked stop time
@@ -231,18 +198,11 @@ describe.only('Tsunami', function () {
 
     const receiverWithdrawAmount = rate.mul(revokeStopTime - checkpointTime);
     const receiverRecipient = randomHex(20);
-    const withdrawUtxo = new Utxo({
-      amount: streamAmount,
-      startTime,
-      stopTime: revokeStopTime,
-      checkpointTime: revokeStopTime,
-      rate,
-      senderKeyPair,
-      receiverKeyPair,
-    });
+
+    const withdrawUtxo = revokeUtxo.withdraw(revokeStopTime);
 
     const { proofArgs: withdrawProofArgs, extData: withdrawExtData } = await prepareWithdraw({
-      pool: tsunami,
+      tsunami,
       input: revokeUtxo,
       output: withdrawUtxo,
       recipient: receiverRecipient,
@@ -250,7 +210,7 @@ describe.only('Tsunami', function () {
 
     await tsunami.withdraw(withdrawProofArgs, withdrawExtData);
 
-    const balance2 = await ethers.provider.getBalance(receiverRecipient); //await token.balanceOf(receiverRecipient);
+    const balance2 = await token.balanceOf(receiverRecipient);
     expect(balance2).to.equal(receiverWithdrawAmount);
   });
 
@@ -263,11 +223,9 @@ describe.only('Tsunami', function () {
     const rate = utils.parseEther('0.0001'); // wei/sec
     const startTime = currentTime;
     const stopTime = startTime + duration;
-    const depositAmount = rate.mul(duration);
     const [senderKeyPair, receiverKeyPair] = KeyPair.createRandomPairs();
 
-    const proposalUtxo = new Utxo({
-      amount: depositAmount,
+    const createUtxo = new Utxo({
       startTime,
       stopTime,
       checkpointTime: startTime,
@@ -276,35 +234,32 @@ describe.only('Tsunami', function () {
       receiverKeyPair,
     });
 
-    const { proofArgs: proposalProofArgs, encryptedOutput } = await prepareProposal({
-      output: proposalUtxo,
+    const { proofArgs: createProofArgs, encryptedOutput } = await prepareCreate({
+      output: createUtxo,
     });
 
-    await tsunami.connect(sender).create(proposalProofArgs, encryptedOutput, {
-      value: depositAmount,
-    });
+    await tsunami.connect(sender).create(createProofArgs, encryptedOutput);
 
     // 4000 sec passed
     await time.increaseTo(startTime + 4000);
 
     const withdraw1Duration = 3000;
     const receiverWithdraw1Amount = rate.mul(withdraw1Duration);
-    const checkpoint1Time = startTime + withdraw1Duration;
+    const withdrawCheckpoint1Time = startTime + withdraw1Duration;
     const receiverRecipient = randomHex(20);
 
     const withdrawUtxo = new Utxo({
-      amount: proposalUtxo.amount,
       startTime,
       stopTime,
-      checkpointTime: checkpoint1Time,
+      checkpointTime: withdrawCheckpoint1Time,
       rate,
       senderKeyPair,
       receiverKeyPair,
     });
 
     const { proofArgs: withdrawProofArgs, extData: withdrawExtData } = await prepareWithdraw({
-      pool: tsunami,
-      input: proposalUtxo,
+      tsunami,
+      input: createUtxo,
       output: withdrawUtxo,
       recipient: receiverRecipient,
     });
@@ -314,7 +269,7 @@ describe.only('Tsunami', function () {
 
     await tsunami.withdraw(withdrawProofArgs, withdrawExtData);
 
-    const balance1 = await ethers.provider.getBalance(receiverRecipient); // await token.balanceOf(receiverRecipient);
+    const balance1 = await token.balanceOf(receiverRecipient);
     expect(balance1).to.equal(receiverWithdraw1Amount);
 
     // 7000 sec passed
@@ -326,24 +281,23 @@ describe.only('Tsunami', function () {
 
     const senderRecipient = randomHex(20);
     const revokeUtxo = new Utxo({
-      amount: proposalUtxo.amount,
       startTime,
       stopTime: revokeStopTime,
-      checkpointTime: checkpoint1Time,
+      checkpointTime: withdrawCheckpoint1Time,
       rate,
       senderKeyPair,
       receiverKeyPair,
     });
 
     const { proofArgs: revokeProofArgs, extData: revokeExtData } = await prepareRevoke({
-      pool: tsunami,
+      tsunami,
       input: withdrawUtxo,
       output: revokeUtxo,
       recipient: senderRecipient,
     });
 
     await tsunami.revoke(revokeProofArgs, revokeExtData);
-    const balance2 = await ethers.provider.getBalance(senderRecipient); // await token.balanceOf(senderRecipient);
+    const balance2 = await token.balanceOf(senderRecipient);
     expect(balance2).to.equal(senderWithdrawAmount);
   });
 });

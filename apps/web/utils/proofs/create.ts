@@ -2,13 +2,12 @@ import { Utxo } from '@tsunami/utils';
 import dayjs from 'dayjs';
 import { parseEther, toFixedHex } from 'utils/eth';
 import { generateSnarkProofSolidity } from 'utils/snark';
-import { calculateTotalStreamAmount } from 'utils/stream';
 
 async function generateProof({ output }: any) {
-  const circuit = 'proposal';
+  const circuit = 'create';
 
   const proofInput = {
-    amount: output.amount,
+    publicAmount: output.amount,
     startTime: output.startTime,
     stopTime: output.stopTime,
     checkpointTime: output.checkpointTime,
@@ -23,7 +22,7 @@ async function generateProof({ output }: any) {
 
   const proofArgs = {
     proof,
-    amount: toFixedHex(proofInput.amount),
+    publicAmount: toFixedHex(proofInput.publicAmount),
     commitment: toFixedHex(proofInput.commitment),
   };
 
@@ -32,7 +31,7 @@ async function generateProof({ output }: any) {
   };
 }
 
-export async function prepareProposalProof({ output }: any) {
+export async function prepareCreateProof({ output }: any) {
   const { proofArgs } = await generateProof({
     output,
   });
@@ -43,9 +42,8 @@ export async function prepareProposalProof({ output }: any) {
   };
 }
 
-export async function prepareProposal({ startTime, stopTime, rate, keyPairs }: any) {
+export async function prepareCreate({ startTime, stopTime, rate, keyPairs }: any) {
   const output = new Utxo({
-    amount: parseEther(`${calculateTotalStreamAmount(rate, startTime, stopTime)}`),
     startTime: dayjs(startTime).unix(),
     stopTime: dayjs(stopTime).unix(),
     checkpointTime: dayjs(startTime).unix(),
@@ -54,7 +52,7 @@ export async function prepareProposal({ startTime, stopTime, rate, keyPairs }: a
     receiverKeyPair: keyPairs.receiver,
   });
 
-  const { proofArgs, encryptedOutput } = await prepareProposalProof({
+  const { proofArgs, encryptedOutput } = await prepareCreateProof({
     output,
   });
 

@@ -1,10 +1,11 @@
+import { Utxo } from '@tsunami/utils';
 import { generateSnarkProofSolidity, toFixedHex } from '../utils';
 
-async function generateProof({ output }: any) {
-  const circuit = 'proposal';
+async function generateProof({ output }: { output: Utxo }) {
+  const circuit = 'create';
 
   const proofInput = {
-    amount: output.amount,
+    publicAmount: output.amount,
     startTime: output.startTime,
     stopTime: output.stopTime,
     checkpointTime: output.checkpointTime,
@@ -19,7 +20,7 @@ async function generateProof({ output }: any) {
 
   const proofArgs = {
     proof,
-    amount: toFixedHex(proofInput.amount),
+    publicAmount: toFixedHex(proofInput.publicAmount),
     commitment: toFixedHex(proofInput.commitment),
   };
 
@@ -28,7 +29,7 @@ async function generateProof({ output }: any) {
   };
 }
 
-export async function prepareProposal({ output }: any) {
+export async function prepareCreate({ output }: { output: Utxo }) {
   const { proofArgs } = await generateProof({
     output,
   });

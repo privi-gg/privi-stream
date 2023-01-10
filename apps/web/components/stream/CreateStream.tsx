@@ -1,24 +1,32 @@
 import { FC, useState } from 'react';
-import { Button, HStack, StackProps, Text, VStack } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Divider,
+  FormLabel,
+  Heading,
+  HStack,
+  StackProps,
+  Text,
+  VStack,
+} from '@chakra-ui/react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { FormDatePicker, FormInput } from 'components/common/form';
 import dayjs from 'dayjs';
 import logger from 'utils/logger';
-import { useAccount } from 'wagmi';
+import { useAccount, useProvider } from 'wagmi';
 import { useShieldedAccount } from 'contexts/shieldedAccount';
-import { isDev, rpcUrlGoerli } from 'config/env';
+import { isDev, testPrivateKey } from 'config/env';
 import { useCreateStream } from 'api/createStream';
-import { BN } from 'utils/eth';
-import { KeyPair } from '@tsunami/utils';
-import { prepareProposal } from 'utils/proofs';
-import { calculateTotalStreamAmount } from 'utils/stream';
-import { useRegistrarContract } from 'hooks/contracts';
+import { BN, formatUnitsRounded, parseEther } from 'utils/eth';
+import { prepareCreate } from 'utils/proofs';
+import { useRegistrarContract, useWTokenGatewayContract } from 'hooks/contracts';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
-import { Contract, providers, Wallet } from 'ethers';
-import { tsunamiAddress } from 'config/network';
-import tsunami from 'abi/tsunami.json';
+import { Wallet } from 'ethers';
+import useInstance from 'hooks/instance';
+import { FormRateInput, FormAddressInput, FormDateInput } from 'components/form';
+import { ChevronRightIcon, ShieldCheckIcon, ArrowRightIcon } from 'components/icons';
 
 interface ICreateSteamInput {
   rate: number;
@@ -40,9 +48,12 @@ const schema = yup.object().shape({
 const CreateStream: FC<StackProps> = ({ ...props }) => {
   const [isLoading, setLoading] = useState(false);
   const registrarContract = useRegistrarContract();
+  const provider = useProvider();
+  const { instanceAddress, instance } = useInstance();
+  const wTokenGateway = useWTokenGatewayContract();
   const { address } = useAccount();
   const { keyPair: senderKeyPair } = useShieldedAccount();
-  const { control, handleSubmit, watch } = useForm<ICreateSteamInput>({
+  const { control, handleSubmit, watch, getValues } = useForm<ICreateSteamInput>({
     resolver: yupResolver(schema),
     defaultValues: {
       rate: 0.00001,
@@ -51,7 +62,7 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
       receiverAddress: isDev ? '0x3C6860DA6ED0939AE9f668476ca9B48Bcc4Ea939' : undefined,
     },
   });
-  const { isSuccess, isError, data, writeAsync: createStream } = useCreateStream();
+  const { isSuccess, isError, writeAsync: createStream } = useCreateStream();
 
   const [rate, startTime, stopTime] = watch(['rate', 'startTime', 'stopTime']);
 
@@ -69,15 +80,15 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
       .finally(() => setLoading(false));
   };
 
-  const startCreation = async (data: ICreateSteamInput) => {
+  const generateProofArgs = async (data: ICreateSteamInput) => {
     if (!address) {
       alert('Connect wallet first!');
-      return;
+      throw new Error('Not connected');
     }
     if (!senderKeyPair) {
       logger.error(`Not logged in!`);
       alert('Log in with your shielded key!');
-      return;
+      throw new Error('Not logged in');
     }
 
     const { keyPair: receiverKeyPair } = await getShieldedAccount(
@@ -89,7 +100,7 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
       throw new Error('Receiver not registered');
     }
 
-    const { proofArgs, encryptedOutput } = await prepareProposal({
+    const { proofArgs, encryptedOutput } = await prepareCreate({
       ...data,
       keyPairs: {
         sender: senderKeyPair,
@@ -97,59 +108,122 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
       },
     });
 
-    console.log(`Proposal proof generated!`);
+    return { proofArgs, encryptedOutput };
+  };
+
+  const startCreation = async (data: ICreateSteamInput) => {
+    const { proofArgs, encryptedOutput } = await generateProofArgs(data);
 
     await createStream?.({
       ...data,
-      recklesslySetUnpreparedArgs: [proofArgs, encryptedOutput],
-      recklesslySetUnpreparedOverrides: { value: BN(proofArgs.amount), gasLimit: BN(2_000_000) },
+      recklesslySetUnpreparedArgs: [instanceAddress, proofArgs, encryptedOutput],
+      recklesslySetUnpreparedOverrides: {
+        value: BN(proofArgs.publicAmount),
+        gasLimit: BN(2_000_000),
+      },
     });
-    // await run(proofArgs, encryptedOutput);
 
     return true;
   };
 
-  const runTest = async (args: any, eo: any) => {
-    const provider = new providers.JsonRpcProvider(rpcUrlGoerli);
-    const wallet = new Wallet(
-      '0x125f637a1047221090a4e49d71b1d5a98208e44451478b20e4df05d84946e7d3',
-      provider,
-    );
-    console.log({ addr: wallet.address });
+  const simulateTest = async () => {
+    setLoading(true);
+    try {
+      const data = getValues();
+      const { proofArgs, encryptedOutput } = await generateProofArgs(data);
+      const wallet = new Wallet(testPrivateKey, provider);
 
-    console.log('Simulating');
+      logger.debug(`Simulating tx...`);
+      const contract = wTokenGateway.connect(wallet);
 
-    const pool = new Contract(tsunamiAddress, tsunami.abi, wallet);
-
-    const tx = await pool.callStatic.create(args, eo, {
-      value: BN(args.amount),
-      gasLimit: 2_000_000,
-    });
-    console.log('Sent tx');
-    console.log(tx);
+      const tx = await contract.callStatic.create(instanceAddress, proofArgs, encryptedOutput, {
+        value: BN(proofArgs.publicAmount),
+        gasLimit: BN(2_000_000),
+      });
+      logger.debug(`Sent tx:`, tx);
+    } catch (error) {
+      logger.error(`Error:`, error);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  let totalStreamAmount;
+  try {
+    const secondsDiff = dayjs(stopTime).diff(startTime, 'second');
+    totalStreamAmount = formatUnitsRounded(parseEther(`${rate}`).mul(secondsDiff), 18);
+  } catch (err) {
+    totalStreamAmount = '0';
+  }
+
   return (
-    <VStack as="form" alignItems="stretch" spacing={10} onSubmit={handleSubmit(submit)} {...props}>
-      <HStack alignItems="end" spacing={2}>
-        <FormInput label="Stream Rate" name="rate" control={control} />
-        <Text pb={4}>ETH/sec</Text>
-      </HStack>
+    <VStack
+      as="form"
+      minW={600}
+      alignItems="stretch"
+      spacing={6}
+      onSubmit={handleSubmit(submit)}
+      bgColor="primary.50"
+      p={8}
+      rounded="md"
+      {...props}
+    >
+      <FormRateInput label="Stream Rate" name="rate" control={control} />
 
-      <FormInput label="Receiver Address" name="receiverAddress" control={control} />
+      <FormAddressInput label="Receiver Address" name="receiverAddress" control={control} />
 
-      <HStack justify="space-around" w="full">
-        <FormDatePicker label="Start At" name="startTime" control={control} />
-        <FormDatePicker label="End At" name="stopTime" control={control} />
-      </HStack>
+      <Box>
+        <FormLabel px={4}>Choose timeframe</FormLabel>
+        <HStack justify="space-between" alignItems="center" w="full">
+          <FormDateInput name="startTime" control={control} w={250} />
+          <Box px="8.2%">
+            <ArrowRightIcon color="gray.400" size={16} />
+          </Box>
+          <FormDateInput name="stopTime" control={control} />
+        </HStack>
+      </Box>
 
-      <Text textAlign="center" fontWeight="bold" fontSize="xl">
-        Stream Amount: {calculateTotalStreamAmount(rate, startTime, stopTime)} ETH
-      </Text>
+      <VStack alignItems="stretch" bgColor="white" rounded="md" px={8} py={4} spacing={4}>
+        <Heading fontSize="2xl" color="gray.600">
+          Stream Summary
+        </Heading>
+        <HStack justify="space-between">
+          <HStack alignItems="center">
+            <ShieldCheckIcon color="green" size={22} />
+            <Text color="gray.400">Total Stream Amount</Text>
+          </HStack>
+          <Text fontWeight="bold">{`${totalStreamAmount} ${instance.currency}`}</Text>
+        </HStack>
+        <HStack justify="space-between">
+          <Text color="gray.400">Fee</Text>
+          <Text fontWeight="bold">0% 0 {instance.currency}</Text>
+        </HStack>
+        <Divider />
+        <HStack justify="space-between">
+          <Text color="gray.400">Total Amount</Text>
+          <Text fontWeight="bold">{`${totalStreamAmount} ${instance.currency}`}</Text>
+        </HStack>
+      </VStack>
 
-      <Button type="submit" isLoading={isLoading} loadingText="Generating proof...">
+      <Button
+        type="submit"
+        isLoading={isLoading}
+        rightIcon={<ChevronRightIcon />}
+        loadingText="Generating proof..."
+      >
         Confirm
       </Button>
+
+      {isDev && (
+        <Button
+          onClick={simulateTest}
+          isLoading={isLoading}
+          colorScheme="orange"
+          loadingText="Generating proof..."
+        >
+          Test
+        </Button>
+      )}
     </VStack>
   );
 };

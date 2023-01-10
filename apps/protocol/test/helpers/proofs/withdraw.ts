@@ -21,18 +21,18 @@ function hashExtData({ recipient, withdrawAmount, relayer, fee, encryptedOutput 
         fee: toFixedHex(fee),
         encryptedOutput,
       },
-    ]
+    ],
   );
   const hash = utils.keccak256(encodedData);
   return BigNumber.from(hash).mod(FIELD_SIZE);
 }
 
-async function buildMerkleTree(pool: Contract) {
-  const filter = pool.filters.NewCommitment();
-  const events = await pool.queryFilter(filter, 0);
+async function buildMerkleTree(tsunami: Contract) {
+  const filter = tsunami.filters.NewCommitment();
+  const events = await tsunami.queryFilter(filter, 0);
 
   const leaves = events
-    .sort((a, b) => a.args?.index - b.args?.index)
+    .sort((a, b) => a.args?.leafIndex - b.args?.leafIndex)
     .map((e) => toFixedHex(e.args?.commitment));
   return new MerkleTree(TREE_HEIGHT, leaves, {
     hashFunction: poseidonHash,
@@ -55,12 +55,12 @@ async function generateProof({
   let inputPathElements;
 
   if (input.amount > 0) {
-    input.index = tree.indexOf(toFixedHex(input.commitment));
-    if (input.index < 0) {
+    input.leafIndex = tree.indexOf(toFixedHex(input.commitment));
+    if (input.leafIndex < 0) {
       throw new Error(`Input commitment ${toFixedHex(input.commitment)} was not found`);
     }
-    inputPathIndices = input.index;
-    inputPathElements = tree.path(input.index).pathElements;
+    inputPathIndices = input.leafIndex;
+    inputPathElements = tree.path(input.leafIndex).pathElements;
   } else {
     inputPathIndices = 0;
     inputPathElements = new Array(tree.levels).fill(0);
@@ -82,7 +82,6 @@ async function generateProof({
     extDataHash,
     publicAmount,
     // data for transaction inputs
-    inAmount: input.amount,
     inStartTime: input.startTime,
     inStopTime: input.stopTime,
     inCheckpointTime: input.checkpointTime,
@@ -118,7 +117,7 @@ async function generateProof({
 }
 
 export async function prepareWithdraw({
-  pool,
+  tsunami,
   input,
   output,
   fee = 0,
@@ -127,7 +126,7 @@ export async function prepareWithdraw({
 }: any) {
   const withdrawAmount = input.rate.mul(output.checkpointTime - input.checkpointTime).toString();
 
-  const tree = await buildMerkleTree(pool);
+  const tree = await buildMerkleTree(tsunami);
 
   const { proofArgs, extData } = await generateProof({
     input,

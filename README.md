@@ -4,12 +4,6 @@ _Monorepo for Tsunami protocol._
 
 Tsunami is a private token streaming protocol for streaming tokens on per-second basis privately.
 
-Tsunami Contracts:
-
-- Goerli - [0x56aDcC1BaF658C19FA4B149270e351db01957ca4](https://goerli.etherscan.io/address/0x56aDcC1BaF658C19FA4B149270e351db01957ca4)
-
-- Polygon Mumbai - [0xbfCA28089Fbe5Ea7F6Fce568c6631149DD11935C](https://mumbai.polygonscan.com/address/0xbfCA28089Fbe5Ea7F6Fce568c6631149DD11935C)
-
 ## About
 Tsunami utilizes the idea of a Stream as a UTXO Note which can be spent by either the stream Sender or the stream Receiver. But both parties are constrained to what parameters they can change in newly created UTXO after spending (and nullifying) the first one.
 

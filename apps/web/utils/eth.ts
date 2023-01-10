@@ -9,6 +9,15 @@ export const formatUnits = utils.formatUnits;
 export const formatEther = utils.formatEther;
 export const toChecksumAddress = utils.getAddress;
 
+export const formatUnitsRounded = (value: BigNumberish, decimals: number, roundTo: number = 4) => {
+  const formatted = formatUnits(value, decimals);
+  return Number(formatted).toFixed(roundTo);
+};
+
+export const formatEtherRounded = (value: BigNumberish, roundTo: number = 4) => {
+  return formatUnitsRounded(value, 18, roundTo);
+};
+
 export const equals = (value: BigNumberish, otherValue: BigNumberish) => {
   return BN(value).eq(otherValue);
 };
@@ -73,6 +82,6 @@ export const isValidAddress = (address?: string) => {
   return utils.isAddress(address);
 };
 
-export const currentBlockTimestamp = async (provider: any) => {
-  return provider.getBlock('latest').then((block: any) => block.timestamp);
+export const latestBlockTimestamp = async (provider: ethers.providers.BaseProvider) => {
+  return provider.getBlock('latest').then((block) => block.timestamp);
 };

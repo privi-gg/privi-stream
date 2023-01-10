@@ -3,48 +3,60 @@ import { KeyPair } from './keyPair';
 import { poseidonHash, randomBN, toFixedBuffer } from './helpers';
 
 export class Utxo {
-  amount: BigNumber;
+  rate: BigNumber;
   startTime: number;
   stopTime: number;
   checkpointTime: number;
-  rate: BigNumber;
   blinding: BigNumber;
   senderKeyPair: KeyPair;
   receiverKeyPair: KeyPair;
-  index?: number;
+  leafIndex?: number;
+  private _amount?: BigNumber;
   private _commitment?: string;
   private _nullifier?: string;
 
   constructor({
-    amount,
+    rate,
     startTime,
     stopTime,
     checkpointTime,
-    rate,
     senderKeyPair,
     receiverKeyPair,
     blinding = randomBN(),
-    index,
+    leafIndex,
   }: {
-    amount: BigNumberish;
+    rate: BigNumberish;
     startTime: number;
     stopTime: number;
     checkpointTime: number;
-    rate: BigNumberish;
     senderKeyPair: KeyPair;
     receiverKeyPair: KeyPair;
     blinding?: BigNumberish;
-    index?: number;
+    leafIndex?: number;
   }) {
-    this.amount = BigNumber.from(amount);
+    if (stopTime <= startTime) {
+      throw new Error('Stop time must be greater than start time');
+    }
+
+    if (checkpointTime < startTime || checkpointTime > stopTime) {
+      throw new Error('Checkpoint time must be between start and stop time');
+    }
+
+    this.rate = BigNumber.from(rate);
     this.startTime = startTime;
     this.stopTime = stopTime;
-    this.checkpointTime = checkpointTime ? checkpointTime : startTime;
-    this.rate = BigNumber.from(rate);
+    this.checkpointTime = checkpointTime;
     this.blinding = BigNumber.from(blinding);
     this.senderKeyPair = senderKeyPair;
     this.receiverKeyPair = receiverKeyPair;
-    this.index = index;
+    this.leafIndex = leafIndex;
+  }
+
+  get amount() {
+    if (!this._amount) {
+      this._amount = this.rate.mul(this.stopTime - this.startTime);
+    }
+    return this._amount;
   }
 
   /**
@@ -53,11 +65,10 @@ export class Utxo {
   get commitment() {
     if (!this._commitment) {
       this._commitment = poseidonHash(
-        this.amount,
+        this.rate,
         this.startTime,
         this.stopTime,
         this.checkpointTime,
-        this.rate,
         this.senderKeyPair.publicKey,
         this.receiverKeyPair.publicKey,
         this.blinding,
@@ -71,13 +82,51 @@ export class Utxo {
    */
   get nullifier() {
     if (!this._nullifier) {
-      if (this.amount.gt(0) && !isFinite(this.index as number)) {
-        throw new Error('Can not compute nullifier without utxo index or private key');
+      if (!isFinite(this.leafIndex as number)) {
+        throw new Error('Cannot compute nullifier without utxo index or private key');
       }
 
-      this._nullifier = poseidonHash(this.commitment, this.index as number);
+      this._nullifier = poseidonHash(this.commitment, this.leafIndex as number);
     }
     return this._nullifier;
+  }
+
+  withdraw(outputCheckpointTime: number) {
+    if (outputCheckpointTime <= this.checkpointTime) {
+      throw new Error('Output checkpoint time must be greater than input checkpoint time');
+    }
+
+    const output = new Utxo({
+      rate: this.rate,
+      startTime: this.startTime,
+      stopTime: this.stopTime,
+      checkpointTime: outputCheckpointTime,
+      senderKeyPair: this.senderKeyPair,
+      receiverKeyPair: this.receiverKeyPair,
+    });
+
+    return output;
+  }
+
+  revoke(outputStopTime: number) {
+    if (outputStopTime >= this.stopTime) {
+      throw new Error('Output stop time must be less than input stop time');
+    }
+
+    if (outputStopTime <= this.checkpointTime) {
+      throw new Error('Output stop time must be greater than input checkpoint time');
+    }
+
+    const output = new Utxo({
+      rate: this.rate,
+      startTime: this.startTime,
+      stopTime: outputStopTime,
+      checkpointTime: this.checkpointTime,
+      senderKeyPair: this.senderKeyPair,
+      receiverKeyPair: this.receiverKeyPair,
+    });
+
+    return output;
   }
 
   /**
@@ -85,11 +134,10 @@ export class Utxo {
    */
   encrypt(opts: { useKeyPair?: 'sender' | 'receiver' } = { useKeyPair: 'sender' }) {
     const bytes = Buffer.concat([
-      toFixedBuffer(this.amount, 31),
+      toFixedBuffer(this.rate, 31),
       toFixedBuffer(this.startTime, 31),
       toFixedBuffer(this.stopTime, 31),
       toFixedBuffer(this.checkpointTime, 31),
-      toFixedBuffer(this.rate, 31),
       toFixedBuffer(this.blinding, 31),
     ]);
 
@@ -119,12 +167,12 @@ export class Utxo {
       senderKeyPair,
       receiverKeyPair,
       useKeyPair = 'receiver',
-      index,
+      leafIndex,
     }: {
       senderKeyPair: KeyPair;
       receiverKeyPair: KeyPair;
       useKeyPair?: 'sender' | 'receiver';
-      index: number;
+      leafIndex: number;
     },
   ) {
     let decryptionKeyPair: KeyPair;
@@ -142,15 +190,14 @@ export class Utxo {
     const buf = decryptionKeyPair.decrypt(data, otherPubKey);
 
     return new Utxo({
-      amount: BigNumber.from('0x' + buf.subarray(0, 31).toString('hex')),
+      rate: BigNumber.from('0x' + buf.subarray(0, 31).toString('hex')),
       startTime: BigNumber.from('0x' + buf.subarray(31, 62).toString('hex')).toNumber(),
       stopTime: BigNumber.from('0x' + buf.subarray(62, 93).toString('hex')).toNumber(),
       checkpointTime: BigNumber.from('0x' + buf.subarray(93, 124).toString('hex')).toNumber(),
-      rate: BigNumber.from('0x' + buf.subarray(124, 155).toString('hex')),
-      blinding: BigNumber.from('0x' + buf.subarray(155, 186).toString('hex')),
+      blinding: BigNumber.from('0x' + buf.subarray(124, 155).toString('hex')),
       senderKeyPair,
       receiverKeyPair,
-      index,
+      leafIndex: leafIndex,
     });
   }
 }

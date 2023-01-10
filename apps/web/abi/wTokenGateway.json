@@ -1,0 +1,307 @@
+{
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "wToken_",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "tsunami",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256[2]",
+                  "name": "a",
+                  "type": "uint256[2]"
+                },
+                {
+                  "internalType": "uint256[2][2]",
+                  "name": "b",
+                  "type": "uint256[2][2]"
+                },
+                {
+                  "internalType": "uint256[2]",
+                  "name": "c",
+                  "type": "uint256[2]"
+                }
+              ],
+              "internalType": "struct DataTypes.Proof",
+              "name": "proof",
+              "type": "tuple"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "commitment",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "publicAmount",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct DataTypes.CreateProofArgs",
+          "name": "args",
+          "type": "tuple"
+        },
+        {
+          "internalType": "bytes",
+          "name": "encryptedOutput",
+          "type": "bytes"
+        }
+      ],
+      "name": "create",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "tsunami",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "unwrappedTokenReceiver",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256[2]",
+                  "name": "a",
+                  "type": "uint256[2]"
+                },
+                {
+                  "internalType": "uint256[2][2]",
+                  "name": "b",
+                  "type": "uint256[2][2]"
+                },
+                {
+                  "internalType": "uint256[2]",
+                  "name": "c",
+                  "type": "uint256[2]"
+                }
+              ],
+              "internalType": "struct DataTypes.Proof",
+              "name": "proof",
+              "type": "tuple"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "root",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "inputNullifier",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "outputCommitment",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "extDataHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "publicAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "stopTime",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct DataTypes.RevokeProofArgs",
+          "name": "args",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "recipient",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "withdrawAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "relayer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "fee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "encryptedOutput",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct DataTypes.ExtData",
+          "name": "extData",
+          "type": "tuple"
+        }
+      ],
+      "name": "revoke",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "wToken",
+      "outputs": [
+        {
+          "internalType": "contract IWToken",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "tsunami",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "unwrappedTokenReceiver",
+          "type": "address"
+        },
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256[2]",
+                  "name": "a",
+                  "type": "uint256[2]"
+                },
+                {
+                  "internalType": "uint256[2][2]",
+                  "name": "b",
+                  "type": "uint256[2][2]"
+                },
+                {
+                  "internalType": "uint256[2]",
+                  "name": "c",
+                  "type": "uint256[2]"
+                }
+              ],
+              "internalType": "struct DataTypes.Proof",
+              "name": "proof",
+              "type": "tuple"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "root",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "inputNullifier",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "outputCommitment",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "extDataHash",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "uint256",
+              "name": "publicAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "checkpointTime",
+              "type": "uint256"
+            }
+          ],
+          "internalType": "struct DataTypes.WithdrawProofArgs",
+          "name": "args",
+          "type": "tuple"
+        },
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "recipient",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "withdrawAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "relayer",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "fee",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "encryptedOutput",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct DataTypes.ExtData",
+          "name": "extData",
+          "type": "tuple"
+        }
+      ],
+      "name": "withdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
+    }
+  ]
+}

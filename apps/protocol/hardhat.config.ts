@@ -6,8 +6,10 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const rpcGoerli = process.env.RPC_GOERLI as string;
-const rpcChiado = process.env.RPC_CHIADO as string;
 const rpcMumbai = process.env.RPC_POLYGON_MUMBAI as string;
+const rpcChiado = process.env.RPC_GNOSIS_CHIADO as string;
+const rpcLiberty20 = process.env.RPC_SHARDEUM_LIBERTY20 as string;
+
 const privateKeys = (process.env.PRIVATE_KEYS_TEST as string).split(',');
 const forkEnabled = process.env.HARDHAT_FORK === 'true';
 
@@ -18,12 +20,16 @@ const config: HardhatUserConfig = {
       url: rpcGoerli,
       accounts: privateKeys,
     },
+    mumbai: {
+      url: rpcMumbai,
+      accounts: privateKeys,
+    },
     chiado: {
       url: rpcChiado,
       accounts: privateKeys,
     },
-    mumbai: {
-      url: rpcMumbai,
+    liberty20: {
+      url: rpcLiberty20,
       accounts: privateKeys,
     },
     hardhat: {

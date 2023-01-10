@@ -6,7 +6,7 @@ include "./merkleProof.circom";
 include "./keyPair.circom";
 
 
-// UTXO { amount, startTime, stopTime, checkpointTime rate,
+// UTXO { rate, startTime, stopTime, checkpointTime,
 //        senderPubKey, receiverPubKey, blinding }
 // commitment = hash(UTXO)
 // nullifier = hash(commitment, merklePath)
@@ -19,14 +19,14 @@ template Revoke(nLevels, zeroLeaf) {
     // ===========================================
     // INPUT UTXO SIGNALS
     // ===========================================
-    signal input inAmount;
+    signal input inRate; // tokens per sec.
     signal input inStartTime;
     signal input inStopTime;
     signal input inCheckpointTime;
-    signal input inRate; // tokens per sec.
     signal input inSenderPrivateKey;
     signal input inReceiverPublicKey;
     signal input inBlinding; 
+    
     signal input inputNullifier; 
     signal input inPathIndices; 
     signal input inPathElements[nLevels]; 
@@ -34,7 +34,7 @@ template Revoke(nLevels, zeroLeaf) {
     // ===========================================
     // OUTPUT UTXO SIGNALS
     // ===========================================
-    // This is moved at an early time to end agreement
+    // This is moved at an early time to end stream
     // Checked at contract for some future time (i.e. outStopTime >= block.timestamp)
     // Assumed to be > inCheckpointTime as well as inStartTime
     signal input outStopTime;
@@ -61,15 +61,14 @@ template Revoke(nLevels, zeroLeaf) {
     component inSenderKeyPair = KeyPair();
     inSenderKeyPair.privateKey <== inSenderPrivateKey;
 
-    component inCommitmentHasher = Poseidon(8);
-    inCommitmentHasher.inputs[0] <== inAmount;
+    component inCommitmentHasher = Poseidon(7);
+    inCommitmentHasher.inputs[0] <== inRate;
     inCommitmentHasher.inputs[1] <== inStartTime;
     inCommitmentHasher.inputs[2] <== inStopTime;
     inCommitmentHasher.inputs[3] <== inCheckpointTime;
-    inCommitmentHasher.inputs[4] <== inRate;
-    inCommitmentHasher.inputs[5] <== inSenderKeyPair.publicKey;
-    inCommitmentHasher.inputs[6] <== inReceiverPublicKey;
-    inCommitmentHasher.inputs[7] <== inBlinding;
+    inCommitmentHasher.inputs[4] <== inSenderKeyPair.publicKey;
+    inCommitmentHasher.inputs[5] <== inReceiverPublicKey;
+    inCommitmentHasher.inputs[6] <== inBlinding;
 
     // Asserts correctness of nullifier
     component inNullifierHasher = Poseidon(2);
@@ -89,15 +88,14 @@ template Revoke(nLevels, zeroLeaf) {
     // ===========================================
     // VERIFY CORRECTNESS OF OUTPUT UTXO
     // ===========================================
-    component outCommitmentHasher = Poseidon(8);
-    outCommitmentHasher.inputs[0] <== inAmount;
+    component outCommitmentHasher = Poseidon(7);
+    outCommitmentHasher.inputs[0] <== inRate;
     outCommitmentHasher.inputs[1] <== inStartTime;
     outCommitmentHasher.inputs[2] <== outStopTime;
     outCommitmentHasher.inputs[3] <== inCheckpointTime;
-    outCommitmentHasher.inputs[4] <== inRate;
-    outCommitmentHasher.inputs[5] <== inSenderKeyPair.publicKey;
-    outCommitmentHasher.inputs[6] <== inReceiverPublicKey;
-    outCommitmentHasher.inputs[7] <== outBlinding;
+    outCommitmentHasher.inputs[4] <== inSenderKeyPair.publicKey;
+    outCommitmentHasher.inputs[5] <== inReceiverPublicKey;
+    outCommitmentHasher.inputs[6] <== outBlinding;
     outCommitmentHasher.out === outputCommitment;
 
     // optional safety constraint to make sure extDataHash cannot be changed

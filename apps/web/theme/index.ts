@@ -1,22 +1,17 @@
-import {
-  theme as baseTheme,
-  withDefaultColorScheme,
-  extendTheme,
-  ThemeConfig,
-} from '@chakra-ui/react';
+import { withDefaultColorScheme, extendTheme, ThemeConfig } from '@chakra-ui/react';
+
+import colors from './colors';
+import fonts from './fonts';
+import components from './components';
 
 const theme: ThemeConfig = extendTheme(
   {
-    config: { initialColorMode: 'dark', useSystemColorMode: false },
-    colors: {
-      brand: baseTheme.colors.cyan,
-    },
-    fonts: {
-      heading: `'Anonymous Pro', monospace`,
-      body: `'Anonymous Pro', monospace`,
-    },
+    // config: { initialColorMode: 'light', useSystemColorMode: false },
+    colors,
+    fonts,
+    components,
   },
-  withDefaultColorScheme({ colorScheme: 'brand' }),
+  withDefaultColorScheme({ colorScheme: 'primary' }),
 );
 
 export default theme;

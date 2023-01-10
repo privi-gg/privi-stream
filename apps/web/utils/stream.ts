@@ -26,17 +26,16 @@ export const scanStreamUTXOFor = async (
     events = await tsunami.queryFilter(filter, 0);
   }
 
-  // console.log({ events });
-
   const outputs: Utxo[] = [];
   for (let i = events.length - 1; i >= 0; i--) {
     const args = events[i].args;
+
     try {
       const utxo = Utxo.decrypt(args.encryptedOutput, {
         senderKeyPair: keyPairs.sender,
         receiverKeyPair: keyPairs.receiver,
         useKeyPair,
-        index: BN(args.index).toNumber(),
+        leafIndex: BN(args.leafIndex).toNumber(),
       });
       outputs.push(utxo);
     } catch (e) {}
@@ -51,4 +50,9 @@ export const scanStreamUTXOFor = async (
   return unspentOutputs;
   // const unspentOutputs = outputs.filter((_, i) => !isSpentArray[i]).reverse();
   // return unspentOutputs;
+};
+
+export const getRevokeClaimableAmount = (stream: Utxo, newStopTime: number) => {
+  const secondsDiff = stream.stopTime - newStopTime;
+  return stream.rate.mul(secondsDiff);
 };

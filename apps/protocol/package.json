@@ -14,7 +14,8 @@
     "deploy:test": "cross-env HARDHAT_FORK=true hardhat deploy --network hardhat",
     "deploy:goerli": "hardhat deploy --network goerli",
     "deploy:mumbai": "hardhat deploy --network mumbai",
-    "deploy:chiado": "hardhat deploy --network chiado"
+    "deploy:chiado": "hardhat deploy --network chiado",
+    "deploy:liberty20": "hardhat deploy --network liberty20"
   },
   "author": "",
   "license": "ISC",

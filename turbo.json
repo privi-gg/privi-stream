@@ -8,13 +8,22 @@
     "web#build": {
       "env": [
         "NODE_ENV",
-        "NEXT_PUBLIC_RPC_URL_GOERLI",
+        "NEXT_PUBLIC_RPC_GOERLI",
         "NEXT_PUBLIC_RPC_POLYGON_MUMBAI",
-        "NEXT_PUBLIC_RPC_URL_CHIADO"
+        "NEXT_PUBLIC_RPC_GNOSIS_CHIADO",
+        "NEXT_PUBLIC_RPC_SHARDEUM_LIBERTY20",
+        "NEXT_PUBLIC_TEST_PRIVATE_KEY"
       ]
     },
     "protocol#build": {
-      "env": ["RPC_GOERLI", "PRIVATE_KEYS_TEST", "RPC_CHIADO", "RPC_POLYGON_MUMBAI", "HARDHAT_FORK"]
+      "env": [
+        "RPC_GOERLI",
+        "RPC_GNOSIS_CHIADO",
+        "RPC_POLYGON_MUMBAI",
+        "RPC_SHARDEUM_LIBERTY20",
+        "PRIVATE_KEYS_TEST",
+        "HARDHAT_FORK"
+      ]
     },
     "lint": {
       "outputs": []
