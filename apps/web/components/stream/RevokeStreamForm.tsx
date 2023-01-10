@@ -5,7 +5,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { useAccount, useProvider } from 'wagmi';
 import { Utxo } from '@tsunami/utils';
 import { isDev, testPrivateKey } from 'config/env';
-import { FormAddressInput } from 'components/form';
+import { FormAddressInput, FormDateInput } from 'components/form';
 import { useForm } from 'react-hook-form';
 import {
   useRegistrarContract,
@@ -17,17 +17,22 @@ import { useShieldedAccount } from 'contexts/shieldedAccount';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
 import { ChevronRightIcon } from 'components/icons';
 import logger from 'utils/logger';
-import { BN, latestBlockTimestamp, isValidAddress, formatUnits } from 'utils/eth';
+import { BN, latestBlockTimestamp, isValidAddress, formatUnitsRounded } from 'utils/eth';
 import { prepareRevoke } from 'utils/proofs';
 import { Wallet } from 'ethers';
-import { formatDate } from 'utils/datetime';
+import { formatDate, now } from 'utils/datetime';
 import { TokenPriceText } from 'components/common';
 import { useRevokeStream } from 'api/revokeStream';
+import { useGetBlock } from 'api/getBlock';
+import { REVOKE_TIME_DELTA } from 'config/constants';
+import { getRevokeClaimableAmount } from 'utils/stream';
+import dayjs from 'dayjs';
 
 const defaultRecipientValue = isDev ? '0x80630fBf405eD070F10c8fFE8E9A83C60736a770' : '';
 
 interface IRevokeStreamInput {
   recipientAddress: string;
+  newStopTime: Date;
 }
 
 interface IRevokeStreamFormProps extends StackProps {
@@ -40,43 +45,41 @@ const schema = yup.object().shape({
     .string()
     .matches(/^(0x)?([A-Fa-f0-9]{40})$/, 'Invalid Address')
     .required('Required'),
+  newStopTime: yup.string().required('Required'),
 });
 
 const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress, ...props }) => {
   const [isLoading, setLoading] = useState(false);
-  const [streamedAmount, setStreamedAmount] = useState(BN(0));
-  const { control, handleSubmit, getValues } = useForm<IRevokeStreamInput>({
-    resolver: yupResolver(schema),
-    defaultValues: {
-      recipientAddress: isDev ? defaultRecipientValue : undefined,
-    },
-  });
+  const [newStopTime, setNewStopTime] = useState(0);
+  const provider = useProvider();
+  const { address } = useAccount();
+  const { data: latestBlock } = useGetBlock('latest');
   const registrarContract = useRegistrarContract();
   const { instanceAddress, instance } = useInstance();
   const tsunamiContract = useTsunamiContract();
   const wTokenGateway = useWTokenGatewayContract();
-  const provider = useProvider();
-  const { address } = useAccount();
   const { keyPair: senderKeyPair } = useShieldedAccount();
-  const { isSuccess, isError, data, writeAsync: revokeStream } = useRevokeStream();
+  const { isSuccess, isError, writeAsync: revokeStream } = useRevokeStream();
+  const { control, handleSubmit, getValues } = useForm<IRevokeStreamInput>({
+    resolver: yupResolver(schema),
+    defaultValues: {
+      recipientAddress: isDev ? defaultRecipientValue : undefined,
+      newStopTime: dayjs().add(30, 'minute').toDate(),
+    },
+  });
 
   useEffect(() => {
     if (!stream) return;
 
-    provider
-      .getBlock('latest')
-      .then((b) => b.timestamp)
-      .then((currentTime) => {
-        const min = Math.min(currentTime, stream.stopTime);
+    const currentTime = latestBlock?.timestamp || now();
+    const newStopTime = currentTime + REVOKE_TIME_DELTA;
 
-        if (currentTime <= stream.checkpointTime) {
-          setStreamedAmount(BN(0));
-        } else {
-          const amt = stream.rate.mul(min - stream.checkpointTime);
-          setStreamedAmount(amt);
-        }
-      });
-  }, [stream, provider]);
+    if (newStopTime >= stream.stopTime) {
+      setNewStopTime(-1);
+    } else {
+      setNewStopTime(newStopTime);
+    }
+  }, [stream, latestBlock?.timestamp]);
 
   const submit = (data: IRevokeStreamInput) => {
     setLoading(true);
@@ -151,9 +154,9 @@ const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress,
 
   const simulateTest = async () => {
     setLoading(true);
-    const { recipientAddress } = getValues();
+    const data = getValues();
     try {
-      const { proofArgs, extData } = await generateProofArgs({ recipientAddress });
+      const { proofArgs, extData } = await generateProofArgs(data);
       const wallet = new Wallet(testPrivateKey, provider);
 
       logger.debug(`Simulating tx...`);
@@ -161,7 +164,7 @@ const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress,
 
       const tx = await contract.callStatic.revoke(
         instanceAddress,
-        recipientAddress,
+        data.recipientAddress,
         proofArgs,
         extData,
         {
@@ -178,6 +181,8 @@ const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress,
 
   const lastWithdrawTime =
     stream.startTime === stream.checkpointTime ? undefined : stream.checkpointTime;
+  const isTooLateToRevoke = newStopTime < 0;
+  const claimableAmount = isTooLateToRevoke ? BN(0) : getRevokeClaimableAmount(stream, newStopTime);
 
   return (
     <VStack bgColor="primary.50" p={8} alignItems="stretch" rounded="md" spacing={8} {...props}>
@@ -193,23 +198,30 @@ const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress,
           )}
         </HStack>
         <HStack justify="space-between">
-          <Text color="gray.500">You can withdraw</Text>
+          <Text color="gray.500">You can revoke & claim</Text>
           <HStack>
-            <TokenPriceText amount={streamedAmount} fontWeight="bold" color="gray.400" />
+            <TokenPriceText amount={claimableAmount} fontWeight="bold" color="gray.400" />
             <Text fontWeight="bold">
-              {formatUnits(streamedAmount, 18)} {instance.currency}
+              {formatUnitsRounded(claimableAmount, 18)} {instance.currency}
             </Text>
           </HStack>
         </HStack>
       </VStack>
       <VStack as="form" alignItems="stretch" spacing={10} onSubmit={handleSubmit(submit)}>
+        <FormDateInput label="Stop At" name="newStopTime" control={control} />
+
         <FormAddressInput
           label="Fund's Recipient Address"
           name="recipientAddress"
           control={control}
         />
-        <Button type="submit" rightIcon={<ChevronRightIcon />} isLoading={isLoading}>
-          Revoke Stream
+        <Button
+          type="submit"
+          rightIcon={<ChevronRightIcon />}
+          disabled={isTooLateToRevoke}
+          isLoading={isLoading}
+        >
+          {!isTooLateToRevoke ? `Revoke Stream` : `Can't revoke now`}
         </Button>
         {isDev && (
           <Button colorScheme="orange" isLoading={isLoading} onClick={simulateTest}>

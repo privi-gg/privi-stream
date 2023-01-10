@@ -1,24 +1,32 @@
 import { FC, useState } from 'react';
-import { Button, Divider, Heading, HStack, StackProps, Text, VStack } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Divider,
+  FormLabel,
+  Heading,
+  HStack,
+  StackProps,
+  Text,
+  VStack,
+} from '@chakra-ui/react';
 import { useForm } from 'react-hook-form';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { FormDatePicker } from 'components/common/form';
 import dayjs from 'dayjs';
 import logger from 'utils/logger';
 import { useAccount, useProvider } from 'wagmi';
 import { useShieldedAccount } from 'contexts/shieldedAccount';
 import { isDev, testPrivateKey } from 'config/env';
 import { useCreateStream } from 'api/createStream';
-import { BN } from 'utils/eth';
+import { BN, formatUnitsRounded, parseEther } from 'utils/eth';
 import { prepareCreate } from 'utils/proofs';
-import { calculateTotalStreamAmount } from 'utils/stream';
 import { useRegistrarContract, useWTokenGatewayContract } from 'hooks/contracts';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
 import { Wallet } from 'ethers';
 import useInstance from 'hooks/instance';
-import { FormRateInput, FormAddressInput } from 'components/form';
-import { ChevronRightIcon, ShieldCheckIcon } from 'components/icons';
+import { FormRateInput, FormAddressInput, FormDateInput } from 'components/form';
+import { ChevronRightIcon, ShieldCheckIcon, ArrowRightIcon } from 'components/icons';
 
 interface ICreateSteamInput {
   rate: number;
@@ -141,9 +149,18 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
     }
   };
 
+  let totalStreamAmount;
+  try {
+    const secondsDiff = dayjs(stopTime).diff(startTime, 'second');
+    totalStreamAmount = formatUnitsRounded(parseEther(`${rate}`).mul(secondsDiff), 18);
+  } catch (err) {
+    totalStreamAmount = '0';
+  }
+
   return (
     <VStack
       as="form"
+      minW={600}
       alignItems="stretch"
       spacing={6}
       onSubmit={handleSubmit(submit)}
@@ -156,10 +173,16 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
 
       <FormAddressInput label="Receiver Address" name="receiverAddress" control={control} />
 
-      <HStack justify="space-around" w="full">
-        <FormDatePicker label="Start At" name="startTime" control={control} />
-        <FormDatePicker label="End At" name="stopTime" control={control} />
-      </HStack>
+      <Box>
+        <FormLabel>Choose timeframe</FormLabel>
+        <HStack justify="space-between" alignItems="center" w="full">
+          <FormDateInput name="startTime" control={control} w={250} />
+          <Box px="8.2%">
+            <ArrowRightIcon color="gray.400" size={16} />
+          </Box>
+          <FormDateInput name="stopTime" control={control} />
+        </HStack>
+      </Box>
 
       <VStack alignItems="stretch" bgColor="white" rounded="md" px={8} py={4} spacing={4}>
         <Heading fontSize="2xl" color="gray.600">
@@ -170,9 +193,7 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
             <ShieldCheckIcon color="green" size={22} />
             <Text color="gray.400">Total Stream Amount</Text>
           </HStack>
-          <Text fontWeight="bold">
-            {calculateTotalStreamAmount(rate, startTime, stopTime)} {instance.currency}
-          </Text>
+          <Text fontWeight="bold">{`${totalStreamAmount} ${instance.currency}`}</Text>
         </HStack>
         <HStack justify="space-between">
           <Text color="gray.400">Fee</Text>
@@ -181,9 +202,7 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
         <Divider />
         <HStack justify="space-between">
           <Text color="gray.400">Total Amount</Text>
-          <Text fontWeight="bold">
-            {calculateTotalStreamAmount(rate, startTime, stopTime)} {instance.currency}
-          </Text>
+          <Text fontWeight="bold">{`${totalStreamAmount} ${instance.currency}`}</Text>
         </HStack>
       </VStack>
 
