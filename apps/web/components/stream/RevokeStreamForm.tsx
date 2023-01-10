@@ -94,7 +94,7 @@ const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress,
       .finally(() => setLoading(false));
   };
 
-  const generateProofArgs = async ({ recipientAddress }: IRevokeStreamInput) => {
+  const generateProofArgs = async ({ recipientAddress, newStopTime }: IRevokeStreamInput) => {
     if (!address) {
       alert('Connect wallet first!');
       throw new Error('Not connected');
@@ -120,12 +120,6 @@ const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress,
       throw new Error('Receiver not registered');
     }
 
-    const newStopTime = (await latestBlockTimestamp(provider)) + 4 * 60;
-    if (stream && newStopTime >= stream?.stopTime) {
-      alert('Too late to stop stream! Stream ending soon anyway!');
-      throw new Error('Too late to stop stream');
-    }
-
     const { proofArgs, extData } = await prepareRevoke({
       tsunami: tsunamiContract,
       input: stream,
@@ -133,7 +127,7 @@ const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress,
         sender: senderKeyPair,
         receiver: receiverKeyPair,
       },
-      newStopTime,
+      newStopTime: dayjs(newStopTime).unix(),
       recipient: wTokenGateway.address,
     });
 
@@ -179,8 +173,7 @@ const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress,
     }
   };
 
-  const lastWithdrawTime =
-    stream.startTime === stream.checkpointTime ? undefined : stream.checkpointTime;
+  const lastWithdrawTime = stream.startTime === stream.checkpointTime ? 0 : stream.checkpointTime;
   const isTooLateToRevoke = newStopTime < 0;
   const claimableAmount = isTooLateToRevoke ? BN(0) : getRevokeClaimableAmount(stream, newStopTime);
 
@@ -189,8 +182,8 @@ const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress,
       <VStack alignItems="stretch" spacing={8}>
         <HStack justify="space-between">
           <Text color="gray.500">Last Withdraw Time</Text>
-          {lastWithdrawTime ? (
-            <Text fontWeight="bold">{formatDate(lastWithdrawTime as number)}</Text>
+          {lastWithdrawTime > 0 ? (
+            <Text fontWeight="bold">{formatDate(lastWithdrawTime * 1000)}</Text>
           ) : (
             <Text fontSize="sm" fontWeight="bold" p={2} rounded="3xl" bg="gray.300">
               Haven&apos;t withdrawn anything yet
