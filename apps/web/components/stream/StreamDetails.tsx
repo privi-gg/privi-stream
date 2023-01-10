@@ -1,6 +1,6 @@
 import { FC, useEffect, useState } from 'react';
 import { Utxo } from '@tsunami/utils';
-import { Box, HStack, Progress, StackProps, Text, VStack } from '@chakra-ui/react';
+import { Avatar, Box, HStack, Progress, StackProps, Text, VStack } from '@chakra-ui/react';
 import { BN, formatEther, formatUnits } from 'utils/eth';
 import dayjs from 'dayjs';
 import { useProvider } from 'wagmi';
@@ -13,7 +13,7 @@ interface IStreamDetailsProps extends StackProps {
   stream: Utxo;
 }
 
-const RevokeStreamDetail: FC<IStreamDetailsProps> = ({ stream, ...props }) => {
+const StreamDetails: FC<IStreamDetailsProps> = ({ stream, ...props }) => {
   const provider = useProvider();
   const { instance } = useInstance();
   const [progress, setProgress] = useState(0);
@@ -95,10 +95,11 @@ const RevokeStreamDetail: FC<IStreamDetailsProps> = ({ stream, ...props }) => {
       <VStack alignItems="stretch" spacing={8}>
         <HStack justify="space-between">
           <Text color="gray.500">Stream Rate</Text>
-          <HStack>
+          <HStack alignItems="center">
             <TokenPriceText amount={stream.rate} fontWeight="bold" color="gray.500" />
 
             <Text fontWeight="bold">{rate}</Text>
+            <Avatar src={instance.iconUrl} size="xs" />
             <Text fontWeight="bold">{instance.currency} / sec</Text>
           </HStack>
         </HStack>
@@ -117,4 +118,4 @@ const RevokeStreamDetail: FC<IStreamDetailsProps> = ({ stream, ...props }) => {
   );
 };
 
-export default RevokeStreamDetail;
+export default StreamDetails;

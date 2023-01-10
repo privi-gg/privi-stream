@@ -1,5 +1,5 @@
 import { FC, useState } from 'react';
-import { Button, HStack, Input, StackProps, Text, VStack } from '@chakra-ui/react';
+import { Button, HStack, StackProps, VStack } from '@chakra-ui/react';
 import { isDev } from 'config/env';
 import {
   useRegistrarContract,
@@ -13,15 +13,14 @@ import { Utxo } from '@tsunami/utils';
 import { useShieldedAccount } from 'contexts/shieldedAccount';
 import { scanStreamUTXOFor } from 'utils/stream';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
-import RevokeStreamDetail from './RevokeStreamDetails';
 import useInstance from 'hooks/instance';
 import { FormAddressInput } from 'components/form';
 import RevokeStreamForm from './RevokeStreamForm';
 import { useForm } from 'react-hook-form';
 import { ChevronRightIcon } from 'components/icons';
+import StreamDetails from './StreamDetails';
 
 const defaultReceiverValue = isDev ? '0x3C6860DA6ED0939AE9f668476ca9B48Bcc4Ea939' : '';
-const defaultRecipientValue = isDev ? '0x80630fBf405eD070F10c8fFE8E9A83C60736a770' : '';
 
 const schema = yup.object().shape({
   receiverAddress: yup
@@ -41,9 +40,6 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
   const [isLoading, setLoading] = useState(false);
   const registrarContract = useRegistrarContract();
   const tsunamiContract = useTsunamiContract();
-  const { instanceAddress, rpcUrl } = useInstance();
-  const wTokenGateway = useWTokenGatewayContract();
-  const provider = useProvider();
   const { address } = useAccount();
   const { keyPair: senderKeyPair } = useShieldedAccount();
 
@@ -114,7 +110,7 @@ const RevokeStream: FC<StackProps> = ({ ...props }) => {
       {streamUtxo && (
         <VStack alignItems="stretch" spacing={16}>
           <HStack justify="space-around" alignItems="flex-start" spacing={8}>
-            <RevokeStreamDetail stream={streamUtxo} flex={1} />
+            <StreamDetails stream={streamUtxo} flex={1} />
             <RevokeStreamForm receiverAddress={receiverAddress} stream={streamUtxo} flex={1} />
           </HStack>
           <Button

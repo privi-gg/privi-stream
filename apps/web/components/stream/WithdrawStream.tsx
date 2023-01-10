@@ -9,11 +9,11 @@ import { Utxo } from '@tsunami/utils';
 import { useShieldedAccount } from 'contexts/shieldedAccount';
 import { scanStreamUTXOFor } from 'utils/stream';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
-import WithdrawStreamDetail from './WithdrawStreamDetails';
 import { useForm } from 'react-hook-form';
 import { FormAddressInput } from 'components/form';
 import { ChevronRightIcon } from 'components/icons';
 import WithdrawStreamForm from './WithdrawStreamForm';
+import StreamDetails from './StreamDetails';
 
 const defaultSenderValue = isDev ? '0x80630fBf405eD070F10c8fFE8E9A83C60736a770' : '';
 
@@ -102,7 +102,7 @@ const WithdrawStream: FC<StackProps> = ({ ...props }) => {
       {streamUtxo && (
         <VStack alignItems="stretch" spacing={16}>
           <HStack justify="space-around" alignItems="flex-start" spacing={8}>
-            <WithdrawStreamDetail stream={streamUtxo} flex={1} />
+            <StreamDetails stream={streamUtxo} flex={1} />
             <WithdrawStreamForm senderAddress={senderAddress} stream={streamUtxo} flex={1} />
           </HStack>
           <Button
