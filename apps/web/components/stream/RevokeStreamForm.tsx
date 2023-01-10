@@ -1,5 +1,5 @@
 import { FC, useEffect, useState } from 'react';
-import { Button, HStack, StackProps, Text, VStack } from '@chakra-ui/react';
+import { Avatar, Button, HStack, StackProps, Text, VStack } from '@chakra-ui/react';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAccount, useProvider } from 'wagmi';
@@ -199,8 +199,9 @@ const RevokeStreamForm: FC<IRevokeStreamFormProps> = ({ stream, receiverAddress,
         </HStack>
         <HStack justify="space-between">
           <Text color="gray.500">You can revoke & claim</Text>
-          <HStack>
+          <HStack alignItems="center">
             <TokenPriceText amount={claimableAmount} fontWeight="bold" color="gray.400" />
+            <Avatar src={instance.iconUrl} size="xs" />
             <Text fontWeight="bold">
               {formatUnitsRounded(claimableAmount, 18)} {instance.currency}
             </Text>
