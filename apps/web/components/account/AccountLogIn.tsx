@@ -1,4 +1,15 @@
-import { Box, Button, Divider, Heading, Spinner, StackProps, Text, VStack } from '@chakra-ui/react';
+import {
+  Box,
+  Button,
+  Divider,
+  Heading,
+  HStack,
+  Image,
+  Spinner,
+  StackProps,
+  Text,
+  VStack,
+} from '@chakra-ui/react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -90,35 +101,39 @@ const AccountLogIn: React.FC<StackProps> = ({ ...props }) => {
           </VStack>
         ) : (
           <Box>
-            <VStack alignSelf="stretch" py={8}>
-              <Button
-                size="lg"
+            <VStack alignItems="stretch" alignSelf="stretch" pb={8}>
+              <HStack
+                as="button"
+                justify="space-between"
+                alignItems="center"
+                rounded="md"
+                p={4}
+                bgColor="gray.100"
+                _hover={{ bgColor: 'gray.200' }}
                 onClick={handleWalletLogin}
-                leftIcon={<EthereumIcon />}
-                rightIcon={
-                  <Box ml={48}>
-                    <ArrowRightIcon />
-                  </Box>
-                }
-                colorScheme="gray"
-                w="full"
               >
-                MetaMask
-              </Button>
-              <Button
-                size="lg"
+                <HStack spacing={4}>
+                  <Image boxSize={6} src="/images/metamask.png" alt="metamask" />
+                  <Text fontWeight="bold">MetaMask</Text>
+                </HStack>
+                <ArrowRightIcon />
+              </HStack>
+              <HStack
+                as="button"
+                justify="space-between"
+                alignItems="center"
+                rounded="md"
+                p={4}
+                bgColor="gray.100"
+                _hover={{ bgColor: 'gray.200' }}
                 onClick={() => setShowLogInForm(true)}
-                leftIcon={<KeyIcon color="green" />}
-                rightIcon={
-                  <Box ml={23}>
-                    <ArrowRightIcon />
-                  </Box>
-                }
-                colorScheme="gray"
-                w="full"
               >
-                Using Shielded Private Key
-              </Button>
+                <HStack spacing={4}>
+                  <KeyIcon color="green" />
+                  <Text fontWeight="bold">Using Shielded Private Key</Text>
+                </HStack>
+                <ArrowRightIcon />
+              </HStack>
             </VStack>
             <Divider />
 
