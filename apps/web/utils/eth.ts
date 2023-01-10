@@ -9,6 +9,15 @@ export const formatUnits = utils.formatUnits;
 export const formatEther = utils.formatEther;
 export const toChecksumAddress = utils.getAddress;
 
+export const formatUnitsRounded = (value: BigNumberish, decimals: number, roundTo: number = 4) => {
+  const formatted = formatUnits(value, decimals);
+  return Number(formatted).toFixed(roundTo);
+};
+
+export const formatEtherRounded = (value: BigNumberish, roundTo: number = 4) => {
+  return formatUnitsRounded(value, 18, roundTo);
+};
+
 export const equals = (value: BigNumberish, otherValue: BigNumberish) => {
   return BN(value).eq(otherValue);
 };
