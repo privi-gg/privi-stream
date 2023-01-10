@@ -4,8 +4,12 @@ import axios from 'axios';
 const apiBaseUrl = 'https://api.coingecko.com/api/v3';
 
 const tokenIds: Record<string, string> = {
-  wxdai: 'wrapped-xdai',
-  dai: 'wrapped-xdai',
+  wxdai: 'xdai',
+  xdai: 'xdai',
+  eth: 'ethereum',
+  weth: 'ethereum',
+  matic: 'matic-network',
+  wmatic: 'matic-network',
 };
 
 interface ITokenPriceInput {
