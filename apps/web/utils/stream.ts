@@ -6,8 +6,6 @@ import { poseidonHash } from './snark';
 
 export const calculateTotalStreamAmount = (rate: number, startTime: Date, endTime: Date) => {
   const secondsDiff = dayjs(endTime).diff(dayjs(startTime), 'second');
-  // console.log({ rate });
-
   const ethAmount = parseEther(`${rate}`).mul(secondsDiff);
   return formatEther(ethAmount);
 };
@@ -52,4 +50,9 @@ export const scanStreamUTXOFor = async (
   return unspentOutputs;
   // const unspentOutputs = outputs.filter((_, i) => !isSpentArray[i]).reverse();
   // return unspentOutputs;
+};
+
+export const getRevokeClaimableAmount = (stream: Utxo, newStopTime: number) => {
+  const secondsDiff = stream.stopTime - newStopTime;
+  return stream.rate.mul(secondsDiff);
 };
