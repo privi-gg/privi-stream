@@ -69,7 +69,6 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
   const submit = (data: ICreateSteamInput) => {
     logger.info(`Submitted:`, data);
     setLoading(true);
-    // simulateTest(data)
     startCreation(data)
       .then(() => {
         logger.log(`Sent tx`);
@@ -174,7 +173,7 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
       <FormAddressInput label="Receiver Address" name="receiverAddress" control={control} />
 
       <Box>
-        <FormLabel>Choose timeframe</FormLabel>
+        <FormLabel px={4}>Choose timeframe</FormLabel>
         <HStack justify="space-between" alignItems="center" w="full">
           <FormDateInput name="startTime" control={control} w={250} />
           <Box px="8.2%">
