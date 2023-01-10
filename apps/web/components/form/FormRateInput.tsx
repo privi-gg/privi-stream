@@ -98,8 +98,20 @@ const FormRateInput: FC<FormInputProps> = ({
           </FormHelperText>
         </VStack>
 
-        <Card rounded="3xl" flexDirection="row" alignSelf="center" px={4} py={2}>
-          <Text fontWeight="bold">{instance.currency}</Text>
+        <Card
+          display="flex"
+          rounded="3xl"
+          flexDirection="row"
+          justify="space-between"
+          alignItems="center"
+          alignSelf="center"
+          px={2}
+          py={2}
+        >
+          <Avatar src={instance.iconUrl} size="xs" />
+          <Text fontWeight="bold" ml={1}>
+            {instance.currency}
+          </Text>
         </Card>
       </HStack>
       {helperText && <FormHelperText>{helperText}</FormHelperText>}
