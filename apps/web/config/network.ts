@@ -25,7 +25,7 @@ export const chains = {
   SHARDEUM_LIBERTY20: 8081,
 };
 
-export const defaultChainId = chains.GOERLI;
+export const defaultChainId = chains.GNOSIS_CHIADO;
 
 export const instanceConfig: Record<number, InstanceConfig> = {
   // Goerli instances
