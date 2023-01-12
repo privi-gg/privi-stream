@@ -1,15 +1,4 @@
-import {
-  Box,
-  Button,
-  Center,
-  Heading,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-  VStack,
-} from '@chakra-ui/react';
+import { Button, VStack } from '@chakra-ui/react';
 import { Layout } from 'components/common/layout';
 import { ROUTES } from 'config/constants';
 import { useRouter } from 'next/router';
@@ -21,10 +10,11 @@ export default function Home() {
   return (
     <Layout>
       <Script src="js/snarkjs.min.js" onLoad={() => logger.info('SnarkJs Loaded!')} />
-      <VStack alignItems="stretch" spacing={8} w="sm" mx="auto" my={24}>
+      <VStack alignItems="stretch" spacing={4} w="sm" mx="auto" my={48} px={12}>
         <Button onClick={() => router.push(ROUTES.CREATE)}>Create Stream</Button>
-        <Button onClick={() => router.push(ROUTES.WITHDRAW)}>Withdraw Stream</Button>
-        <Button onClick={() => router.push(ROUTES.REVOKE)}>Revoke Stream</Button>
+        <Button onClick={() => router.push(ROUTES.WITHDRAW)} variant="outline" colorScheme="gray">
+          Withdraw Stream
+        </Button>
       </VStack>
     </Layout>
   );

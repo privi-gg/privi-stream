@@ -184,12 +184,12 @@ const CreateStream: FC<StackProps> = ({ ...props }) => {
       </Box>
 
       <VStack alignItems="stretch" bgColor="white" rounded="md" px={8} py={4} spacing={4}>
-        <Heading fontSize="2xl" color="gray.600">
+        <Heading fontSize="lg" color="gray.600">
           Stream Summary
         </Heading>
         <HStack justify="space-between">
           <HStack alignItems="center">
-            <ShieldCheckIcon color="green" size={22} />
+            <ShieldCheckIcon color="teal" size={22} />
             <Text color="gray.400">Total Stream Amount</Text>
           </HStack>
           <Text fontWeight="bold">{`${totalStreamAmount} ${instance.currency}`}</Text>

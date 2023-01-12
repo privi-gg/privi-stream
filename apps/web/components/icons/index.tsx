@@ -1,5 +1,4 @@
 export { BiUserCircle as UserIcon } from 'react-icons/bi';
-// export { BiLogOut as LogOutIcon } from 'react-icons/bi';
 export { BiLogIn as LogInIcon } from 'react-icons/bi';
 export { BiDetail as DetailIcon } from 'react-icons/bi';
 export { BiErrorCircle as ErrorIcon } from 'react-icons/bi';
@@ -15,3 +14,4 @@ export { FiCopy as CopyIcon } from 'react-icons/fi';
 export { BiTimeFive as TimeIcon } from 'react-icons/bi';
 export { BiCheckCircle as CheckCircleIcon } from 'react-icons/bi';
 export { FiLogOut as LogOutIcon } from 'react-icons/fi';
+export { IoWallet as WalletIcon } from 'react-icons/io5';

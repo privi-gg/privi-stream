@@ -1526,11 +1526,6 @@
     "@ethersproject/properties" "^5.7.0"
     "@ethersproject/strings" "^5.7.0"
 
-"@fontsource/inter@^4.5.14":
-  version "4.5.14"
-  resolved "https://registry.yarnpkg.com/@fontsource/inter/-/inter-4.5.14.tgz#3944b809aa7bf27dacd20bdc04a49fb738959724"
-  integrity sha512-JDC9AocdPLuGsASkvWw9hS5gtHE7K9dOwL98XLrk5yjYqxy4uVnScG58NUvFMJDVJRl/7c8Wnap6PEs+7Zvj1Q==
-
 "@fontsource/space-grotesk@^4.5.12":
   version "4.5.12"
   resolved "https://registry.yarnpkg.com/@fontsource/space-grotesk/-/space-grotesk-4.5.12.tgz#1f8157d6c6f67e50a12c932094c8b3b04addfd86"

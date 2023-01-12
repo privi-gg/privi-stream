@@ -11,6 +11,7 @@ import {
 } from 'config/env';
 import { APP_NAME } from 'config/constants';
 import fonts from 'theme/fonts';
+import { defaultChainId } from 'config/network';
 
 const chiadoChain: Chain = {
   id: 10200,
@@ -62,7 +63,7 @@ const rainbowKittheme = {
 const WalletProvider: FC<PropsWithChildren> = ({ children }) => {
   return (
     <WagmiConfig client={wagmiClient}>
-      <RainbowKitProvider chains={chains} theme={rainbowKittheme}>
+      <RainbowKitProvider chains={chains} initialChain={defaultChainId} theme={rainbowKittheme}>
         {children}
       </RainbowKitProvider>
     </WagmiConfig>
