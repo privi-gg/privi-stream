@@ -1,9 +1,11 @@
 import {
   Box,
   Button,
+  Circle,
   Divider,
   Heading,
   HStack,
+  Icon,
   Image,
   Spinner,
   StackProps,
@@ -21,7 +23,7 @@ import { useUI } from 'contexts/ui';
 import { APP_NAME, SIGN_MESSAGE } from 'config/constants';
 import { useSignMessage } from 'wagmi';
 import { generateKeyPairFromSignature } from 'utils/stream';
-import { ArrowRightIcon, EthereumIcon, KeyIcon } from 'components/icons';
+import { ArrowRightIcon, KeyIcon, WalletIcon } from 'components/icons';
 import { useState } from 'react';
 
 const schema = yup.object().shape({
@@ -113,8 +115,10 @@ const AccountLogIn: React.FC<StackProps> = ({ ...props }) => {
                 onClick={handleWalletLogin}
               >
                 <HStack spacing={4}>
-                  <Image boxSize={6} src="/images/metamask.png" alt="metamask" />
-                  <Text fontWeight="bold">MetaMask</Text>
+                  <Circle bgColor="white" rounded="full" size={8}>
+                    <Icon as={WalletIcon} color="blue.400" />
+                  </Circle>
+                  <Text fontWeight="bold">Use Wallet</Text>
                 </HStack>
                 <ArrowRightIcon />
               </HStack>
@@ -129,7 +133,9 @@ const AccountLogIn: React.FC<StackProps> = ({ ...props }) => {
                 onClick={() => setShowLogInForm(true)}
               >
                 <HStack spacing={4}>
-                  <KeyIcon color="green" />
+                  <Circle bgColor="white" rounded="full" size={8}>
+                    <Icon as={KeyIcon} color="blue.400" />
+                  </Circle>
                   <Text fontWeight="bold">Using Shielded Private Key</Text>
                 </HStack>
                 <ArrowRightIcon />
