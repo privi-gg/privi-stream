@@ -1,5 +1,5 @@
 import { FC, useEffect, useState } from 'react';
-import { Utxo } from '@tsunami/utils';
+import { Utxo } from '@privi-stream/common';
 import { Avatar, Box, HStack, Progress, StackProps, Text, VStack } from '@chakra-ui/react';
 import { BN, formatEther, formatUnits } from 'utils/eth';
 import dayjs from 'dayjs';

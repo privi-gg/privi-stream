@@ -1,4 +1,4 @@
-import { Utxo } from '@tsunami/utils';
+import { Utxo } from '@privi-stream/common';
 import { TREE_HEIGHT } from 'config/constants';
 import { Contract, ethers } from 'ethers';
 import MerkleTree from 'fixed-merkle-tree';

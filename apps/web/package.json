@@ -33,7 +33,7 @@
     "wagmi": "^0.8.3",
     "yup": "^0.32.11",
     "xcircomlib": "npm:circomlib@^0.5.5",
-    "@tsunami/utils": "*"
+    "@privi-stream/common": "*"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",

@@ -3,7 +3,7 @@ import { Avatar, Button, HStack, StackProps, Text, VStack } from '@chakra-ui/rea
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAccount, useProvider } from 'wagmi';
-import { Utxo } from '@tsunami/utils';
+import { Utxo } from '@privi-stream/common';
 import { isDev, testPrivateKey } from 'config/env';
 import { FormAddressInput, FormDateInput } from 'components/form';
 import { useForm } from 'react-hook-form';

@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
-import { Utxo, KeyPair } from '@tsunami/utils';
+import { Utxo, KeyPair } from '@privi-stream/common';
 import { deployHasher } from '../scripts/hasher';
 import { deployContract, randomHex } from './helpers/utils';
 import { TREE_HEIGHT } from './helpers/constants';

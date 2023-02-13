@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Contract } from 'ethers';
 import { useAccount } from 'wagmi';
 import { useRegistrarContract } from 'hooks/contracts';
-import { KeyPair } from '@tsunami/utils';
+import { KeyPair } from '@privi-stream/common';
 
 export async function getShieldedAccount(address: string, registrar: Contract) {
   const registerEventFilter = registrar.filters.ShieldedAddress(address);
