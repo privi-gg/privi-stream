@@ -1,4 +1,4 @@
-import { Utxo } from '@tsunami/utils';
+import { Utxo } from '@privi-stream/common';
 import { generateSnarkProofSolidity, toFixedHex } from '../utils';
 
 async function generateProof({ output }: { output: Utxo }) {

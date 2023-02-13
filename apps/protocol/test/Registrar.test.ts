@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
-import { KeyPair } from '@tsunami/utils';
+import { KeyPair } from '@privi-stream/common';
 import { deployContract } from './helpers/utils';
 
 describe('Registrar', function () {

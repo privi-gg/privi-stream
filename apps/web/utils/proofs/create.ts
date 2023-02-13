@@ -1,4 +1,4 @@
-import { Utxo } from '@tsunami/utils';
+import { Utxo } from '@privi-stream/common';
 import dayjs from 'dayjs';
 import { parseEther, toFixedHex } from 'utils/eth';
 import { generateSnarkProofSolidity } from 'utils/snark';

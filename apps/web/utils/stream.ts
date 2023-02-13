@@ -1,4 +1,4 @@
-import { KeyPair, Utxo } from '@tsunami/utils';
+import { KeyPair, Utxo } from '@privi-stream/common';
 import dayjs from 'dayjs';
 import { Contract } from 'ethers';
 import { BN, formatEther, parseEther, toFixedHex } from './eth';

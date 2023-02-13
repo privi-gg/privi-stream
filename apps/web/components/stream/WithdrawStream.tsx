@@ -5,7 +5,7 @@ import { useRegistrarContract, useTsunamiContract } from 'hooks/contracts';
 import * as yup from 'yup';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useAccount } from 'wagmi';
-import { Utxo } from '@tsunami/utils';
+import { Utxo } from '@privi-stream/common';
 import { useShieldedAccount } from 'contexts/shieldedAccount';
 import { scanStreamUTXOFor } from 'utils/stream';
 import { getShieldedAccount } from 'api/getShieldedAccounts';
