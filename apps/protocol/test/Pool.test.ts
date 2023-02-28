@@ -10,7 +10,7 @@ import { CHECKPOINT_TREE_LEVELS, STREAM_TREE_LEVELS } from './helpers/constants'
 
 const { utils } = ethers;
 
-describe.only('Pool', function () {
+describe('Pool', function () {
   async function setUpFixture() {
     const hasher = await deployHasher();
     const token = await deployContract('WTokenMock');

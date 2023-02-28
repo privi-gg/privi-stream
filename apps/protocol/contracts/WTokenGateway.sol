@@ -4,10 +4,11 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IWToken.sol";
 import "./interfaces/IPool.sol";
+import "./interfaces/IWTokenGateway.sol";
 
 import {CreateProofArgs, CheckpointProofArgs, ExtData} from "./helpers/DataTypes.sol";
 
-contract WTokenGateway {
+contract WTokenGateway is IWTokenGateway {
     IWToken public immutable wToken;
 
     constructor(address wToken_) {
@@ -19,7 +20,10 @@ contract WTokenGateway {
         CreateProofArgs calldata args,
         CreateData calldata data
     ) external payable {
-        require(msg.value == args.publicAmount, "Wrong amount sent");
+        if (msg.value != args.publicAmount) {
+            revert InvalidValueSent(msg.value, args.publicAmount);
+        }
+
         wToken.deposit{value: msg.value}();
         wToken.approve(pool, msg.value);
         IPool(pool).create(args, data);
@@ -31,9 +35,12 @@ contract WTokenGateway {
         CheckpointProofArgs calldata args,
         ExtData calldata extData
     ) external {
-        require(extData.recipient == address(this), "Require recipient to be gateway");
+        if (extData.recipient != address(this)) {
+            revert RecipientNotGateway(extData.recipient, address(this));
+        }
+
         IPool(pool).withdraw(args, extData);
-        uint256 withdrawAmount = uint256(extData.withdrawAmount);
+        uint256 withdrawAmount = extData.withdrawAmount;
         wToken.approve(address(wToken), withdrawAmount);
         wToken.withdraw(withdrawAmount);
         _safeTransferETH(unwrappedTokenReceiver, withdrawAmount);
