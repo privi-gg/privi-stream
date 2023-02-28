@@ -5,18 +5,17 @@ include "../../../node_modules/circomlib/circuits/poseidon.circom";
 include "./merkleProof.circom";
 include "./keyPair.circom";
 
-// UTXO { rate, startTime, stopTime, checkpointTime,
+// Stream { rate, startTime, stopTime,
 //        senderPubKey, receiverPubKey, blinding }
-// commitment = hash(UTXO)
+// commitment = hash(Stream)
 // nullifier = hash(commitment, merklePath)
 
-template Create(nLevels, zeroLeaf) {
+template Create() {
     signal input publicAmount; // total stream amount
 
     signal input rate;
     signal input startTime;
     signal input stopTime;
-    signal input checkpointTime;
     signal input senderPrivateKey;
     signal input receiverPublicKey;
     signal input blinding; 
@@ -32,9 +31,6 @@ template Create(nLevels, zeroLeaf) {
     isLt.in[1] <== stopTime;
     isLt.out === 1;
 
-    // Assert checkpointTime == startTime
-    checkpointTime === startTime;
-
     // ===========================================
     // Verify correctness of amounts
     // ===========================================
@@ -47,19 +43,18 @@ template Create(nLevels, zeroLeaf) {
     // Verify correctness of commitment
     // ===========================================
     component senderKeyPair = KeyPair();
-    component commitmentHasher = Poseidon(7);
+    component commitmentHasher = Poseidon(6);
 
     senderKeyPair.privateKey <== senderPrivateKey;
 
     commitmentHasher.inputs[0] <== rate;
     commitmentHasher.inputs[1] <== startTime;
     commitmentHasher.inputs[2] <== stopTime;
-    commitmentHasher.inputs[3] <== checkpointTime;
-    commitmentHasher.inputs[4] <== senderKeyPair.publicKey;
-    commitmentHasher.inputs[5] <== receiverPublicKey;
-    commitmentHasher.inputs[6] <== blinding;
+    commitmentHasher.inputs[3] <== senderKeyPair.publicKey;
+    commitmentHasher.inputs[4] <== receiverPublicKey;
+    commitmentHasher.inputs[5] <== blinding;
 
     commitment === commitmentHasher.out;
 }
 
-component main { public [publicAmount, commitment] } = Create(20, 11850551329423159860688778991827824730037759162201783566284850822760196767874);
+component main { public [publicAmount, commitment] } = Create();

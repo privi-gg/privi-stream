@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Box,
   Button,
@@ -6,7 +7,6 @@ import {
   Heading,
   HStack,
   Icon,
-  Image,
   Spinner,
   StackProps,
   Text,
@@ -24,7 +24,6 @@ import { APP_NAME, SIGN_MESSAGE } from 'config/constants';
 import { useSignMessage } from 'wagmi';
 import { generateKeyPairFromSignature } from 'utils/stream';
 import { ArrowRightIcon, KeyIcon, WalletIcon } from 'components/icons';
-import { useState } from 'react';
 
 const schema = yup.object().shape({
   privateKey: yup

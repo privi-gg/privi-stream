@@ -1,32 +1,33 @@
-import { ethers } from 'hardhat';
-import MerkleTree from 'fixed-merkle-tree';
-import { TREE_HEIGHT, ZERO_VALUE } from '../constants';
-import { poseidonHash } from './snark';
 import { type BigNumberish } from 'ethers';
-
-const { BigNumber, utils } = ethers;
+import MerkleTree from 'fixed-merkle-tree';
+import { ZERO_LEAF_STREAM, ZERO_LEAF_CHECKPOINT } from '@privi-stream/common';
+import { BN, poseidonHash } from 'privi-utils';
 
 export const cloneObject = (v: any) => {
   return JSON.parse(JSON.stringify(v));
 };
 
-export const getNewTree = () => {
-  const tree = new MerkleTree(TREE_HEIGHT, [], {
+export const getNewStreamTree = (nLevels: number) => {
+  const tree = new MerkleTree(nLevels, [], {
     hashFunction: poseidonHash,
-    zeroElement: ZERO_VALUE,
+    zeroElement: ZERO_LEAF_STREAM,
   });
   return tree;
 };
 
-export const print = (v: any) => {
-  console.log(JSON.stringify(v, undefined, 2));
+export const getNewCheckpointTree = (nLevels: number) => {
+  const tree = new MerkleTree(nLevels, [], {
+    hashFunction: poseidonHash,
+    zeroElement: ZERO_LEAF_CHECKPOINT,
+  });
+  return tree;
 };
 
 export const toFixedBuffer = (value: BigNumberish, length: number) =>
   Buffer.from(
-    BigNumber.from(value)
+    BN(value)
       .toHexString()
       .slice(2)
       .padStart(length * 2, '0'),
-    'hex'
+    'hex',
   );

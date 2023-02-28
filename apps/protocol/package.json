@@ -5,30 +5,30 @@
   "main": "index.js",
   "scripts": {
     "circuit:build:create": "./scripts/buildCircuit.sh create",
-    "circuit:build:withdraw": "./scripts/buildCircuit.sh withdraw",
+    "circuit:build:checkpoint": "./scripts/buildCircuit.sh checkpoint",
     "circuit:build:revoke": "./scripts/buildCircuit.sh revoke",
     "circuit:build": "yarn circuit:build:create && yarn circuit:build:withdraw && yarn circuit:build:revoke",
-    "build": "hardhat compile",
+    "compile": "hardhat compile",
     "test": "hardhat test",
     "start": "hardhat node",
     "deploy:test": "cross-env HARDHAT_FORK=true hardhat deploy --network hardhat",
     "deploy:goerli": "hardhat deploy --network goerli",
     "deploy:mumbai": "hardhat deploy --network mumbai",
-    "deploy:chiado": "hardhat deploy --network chiado",
-    "deploy:liberty20": "hardhat deploy --network liberty20"
+    "deploy:chiado": "hardhat deploy --network chiado"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@metamask/eth-sig-util": "^5.0.0",
-    "@openzeppelin/contracts": "^4.7.3",
+    "@openzeppelin/contracts": "^4.8.1",
+    "@openzeppelin/contracts-upgradeable": "^4.8.1",
     "circomlib": "^2.0.5",
     "cross-env": "^7.0.3",
     "dotenv": "^16.0.2",
-    "snarkjs": "^0.4.24",
-    "xcircomlib": "npm:circomlib@^0.5.5"
+    "snarkjs": "^0.4.24"
   },
   "devDependencies": {
+    "privi-utils": "https://github.com/privi-gg/privi-utils.git#77e45aee0d65703b735f798d2ee0210085470f36",
     "@ethersproject/abi": "^5.4.7",
     "@ethersproject/providers": "^5.4.7",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
