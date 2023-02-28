@@ -1,6 +1,6 @@
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
-import networks from '../../constants/network';
+import { networks } from '../config';
 
 const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployments, getNamedAccounts, getChainId } = hre;
@@ -9,7 +9,8 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const { deployer } = await getNamedAccounts();
 
   const chainId = await getChainId();
-  const tokenAddress = networks[chainId].wrappedNativeCurrency;
+  const token = networks[chainId].wrappedNativeToken;
+  const tokenAddress = networks[chainId].tokens[token].address;
 
   await deploy('wTokenGateway', {
     contract: 'WTokenGateway',

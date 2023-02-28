@@ -1,16 +1,17 @@
+import { poseidonArtifact } from 'privi-utils';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DeployFunction } from 'hardhat-deploy/types';
-const genContract = require('xcircomlib/src/poseidon_gencontract.js');
 
 const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
-  const { deployments, getNamedAccounts } = hre;
+  const { deployments, getNamedAccounts, network } = hre;
   const { deployer } = await getNamedAccounts();
   const { deploy } = deployments;
 
-  const abi = genContract.generateABI(2) as any[];
-  const bytecode = genContract.createCode(2) as any;
+  const abi = poseidonArtifact.abi;
+  const bytecode = poseidonArtifact.bytecode as string;
 
-  await deploy('hasher', {
+  const deploymentName = `${network.name}-hasher`;
+  await deploy(deploymentName, {
     from: deployer,
     contract: {
       abi,

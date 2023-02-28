@@ -7,7 +7,7 @@
     "circuit:build:create": "./scripts/buildCircuit.sh create",
     "circuit:build:checkpoint": "./scripts/buildCircuit.sh checkpoint",
     "circuit:build:revoke": "./scripts/buildCircuit.sh revoke",
-    "circuit:build": "yarn circuit:build:create && yarn circuit:build:withdraw && yarn circuit:build:revoke",
+    "circuit:build": "yarn circuit:build:create && yarn circuit:build:checkpoint && yarn circuit:build:revoke",
     "compile": "hardhat compile",
     "test": "hardhat test",
     "start": "hardhat node",
@@ -29,6 +29,7 @@
   },
   "devDependencies": {
     "privi-utils": "https://github.com/privi-gg/privi-utils.git#77e45aee0d65703b735f798d2ee0210085470f36",
+    "@openzeppelin/hardhat-upgrades": "^1.22.1",
     "@ethersproject/abi": "^5.4.7",
     "@ethersproject/providers": "^5.4.7",
     "@nomicfoundation/hardhat-chai-matchers": "^1.0.0",
