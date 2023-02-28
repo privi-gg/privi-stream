@@ -31,8 +31,6 @@ template Checkpoint(nStreamLevels, nCheckpointLevels) {
     signal input streamSenderPublicKey;
     signal input streamReceiverPrivateKey;
     signal input streamBlinding; 
-
-    // signal input streamNullifier; 
     signal input streamPathIndices; 
     signal input streamPathElements[nStreamLevels]; 
 
@@ -95,12 +93,6 @@ template Checkpoint(nStreamLevels, nCheckpointLevels) {
     streamCommitmentHasher.inputs[4] <== receiverKeyPair.publicKey;
     streamCommitmentHasher.inputs[5] <== streamBlinding;
 
-    // Asserts correctness of stream nullifier
-    // component streamNullifierHasher = Poseidon(2);
-    // streamNullifierHasher.inputs[0] <== streamCommitmentHasher.out;
-    // streamNullifierHasher.inputs[1] <== inCheckpointPathIndices;
-    // streamNullifierHasher.out === streamNullifier;
-
     // Asserts stream existence in tree
     component streamTree = MerkleProof(nStreamLevels);
     streamTree.leaf <== streamCommitmentHasher.out;
@@ -109,6 +101,9 @@ template Checkpoint(nStreamLevels, nCheckpointLevels) {
         streamTree.pathElements[i] <== streamPathElements[i];
     }
     streamTree.root === streamRoot;
+
+    // Note: No need to check for stream nullifier since
+    // it is not nullifying the stream
 
     // ===========================================
     // VERIFY CORRECTNESS OF INPUT CHECKPOINT
@@ -135,20 +130,6 @@ template Checkpoint(nStreamLevels, nCheckpointLevels) {
     // Skips the root inclusion constraint if 
     // inCheckpointTime == streamStartTime && inCheckpointBlinding == streamBlinding
     // Such `Checkpoint` aka "zero checkpoint" is required as input during first withdraw
-
-    // component isCheckpointStartTime = IsEqual();
-    // isCheckpointStartTime.in[0] <== inCheckpointTime;
-    // isCheckpointStartTime.in[1] <== streamStartTime;
-
-    // component isSameBlinding = IsEqual();
-    // isSameBlinding.in[0] <== inCheckpointBlinding;
-    // isSameBlinding.in[1] <== streamBlinding;
-
-    // component isZeroCheckpoint = IsZero();
-    // zero chkpnt when: 1 && 1
-    // non zero chkpnt when: 1 || 0, 0 || 1, 0 || 0
-    // isZeroCheckpoint.in <== isCheckpointStartTime.out * isSameBlinding.out;
-
     signal isCheckpointStartTime <== 1 - (inCheckpointTime - streamStartTime);
     signal isSameBlinding <== 1 - (inCheckpointBlinding - streamBlinding);
 
@@ -156,7 +137,6 @@ template Checkpoint(nStreamLevels, nCheckpointLevels) {
     checkCheckpointRoot.in[0] <== checkpointRoot;
     checkCheckpointRoot.in[1] <== checkpointTree.root;
     checkCheckpointRoot.enabled <== 1 - isCheckpointStartTime * isSameBlinding;
-    // checkCheckpointRoot.enabled <== isZeroCheckpoint.out;
 
     // ===========================================
     // VERIFY CORRECTNESS OF OUTPUT CHECKPOINT
