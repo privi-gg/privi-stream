@@ -32,8 +32,13 @@ describe('ShieldedWallet', function () {
     const originalSw = ShieldedWallet.createRandom();
     const address = originalSw.address();
 
-    const sw = ShieldedWallet.fromAddress(address);
+    let sw = ShieldedWallet.fromAddress(address);
     expect(sw.privateKey).to.equal('');
+    expect(sw.publicKey.toString()).to.equal(originalSw.publicKey.toString());
+
+    sw = ShieldedWallet.fromPublicKey(originalSw.publicKey);
+    expect(sw.privateKey).to.equal('');
+    expect(sw.encryptionKey).to.equal('');
     expect(sw.publicKey.toString()).to.equal(originalSw.publicKey.toString());
   });
 });

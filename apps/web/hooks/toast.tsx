@@ -1,4 +1,4 @@
-import { useToast as useChakraToast, UseToastOptions } from '@chakra-ui/react';
+import { ToastId, useToast as useChakraToast, UseToastOptions } from '@chakra-ui/react';
 
 /**
  * Default config for toast
@@ -10,7 +10,15 @@ const defaultOpts: UseToastOptions = {
   duration: 4000,
 };
 
-const useToast = () => {
+type UseToast = () => {
+  showToast: (opts?: UseToastOptions) => ToastId;
+  showErrorToast: (opts?: UseToastOptions) => ToastId;
+  showSuccessToast: (opts?: UseToastOptions) => ToastId;
+  showInfoToast: (opts?: UseToastOptions) => ToastId;
+  showTxStatusToast: (isSuccess: boolean, isError: boolean, opts?: UseToastOptions) => void;
+};
+
+const useToast: UseToast = () => {
   const toast = useChakraToast();
 
   const showToast = (opts: UseToastOptions = {}) => toast({ ...defaultOpts, ...opts });

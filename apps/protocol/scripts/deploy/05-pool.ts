@@ -25,7 +25,6 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   const numStreamLevels = networks[chainId].tokens[token].numStreamTreeLevels;
   const numCheckpointTreeLevels = networks[chainId].tokens[token].numCheckpointTreeLevels;
   const sanctionsList = networks[chainId].sanctionsList;
-  const maxDepositAmount = networks[chainId].tokens[token].maxDepositAmount;
 
   //@todo check possibility to skip
   const PoolImplFactory = await ethers.getContractFactory('Pool', deployerSigner);
@@ -34,14 +33,7 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     [numStreamLevels, numCheckpointTreeLevels],
     {
       kind: 'uups',
-      constructorArgs: [
-        tokenAddress,
-        hasher,
-        sanctionsList,
-        createVerifier,
-        checkpointVerifier,
-        constants.AddressZero,
-      ],
+      constructorArgs: [tokenAddress, hasher, sanctionsList, createVerifier, checkpointVerifier],
       unsafeAllow: ['constructor', 'state-variable-immutable'],
     },
   );
@@ -52,7 +44,6 @@ const deploy: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
   deployments.log(`deployed at ${pool.address}`);
   await deployments.save(deploymentName, {
     abi: poolImplArtifact.abi,
-    bytecode: poolImplArtifact.bytecode,
     address: pool.address,
   });
 };

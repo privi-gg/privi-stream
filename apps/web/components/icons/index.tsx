@@ -15,3 +15,7 @@ export { BiTimeFive as TimeIcon } from 'react-icons/bi';
 export { BiCheckCircle as CheckCircleIcon } from 'react-icons/bi';
 export { FiLogOut as LogOutIcon } from 'react-icons/fi';
 export { IoWallet as WalletIcon } from 'react-icons/io5';
+export { MdInfo as InfoIcon } from 'react-icons/md';
+export { IoAddCircle as PlusIcon } from 'react-icons/io5';
+export { FiArrowUpRight as ArrowUpRightIcon } from 'react-icons/fi';
+export { BsTwitter as TwitterIcon } from 'react-icons/bs';

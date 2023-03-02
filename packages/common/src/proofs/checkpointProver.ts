@@ -58,6 +58,15 @@ export class CheckpointProver {
     relayer,
   }: CheckpointGenerateProofArgs) {
     const stream = input.stream;
+
+    if (!stream.senderShieldedWallet) {
+      throw new Error('Sender shielded wallet is not set');
+    }
+
+    if (!stream.receiverShieldedWallet) {
+      throw new Error('Receiver shielded wallet is not set');
+    }
+
     let inCheckpointPathIndices;
     let inCheckpointPathElements;
 
@@ -109,6 +118,7 @@ export class CheckpointProver {
       outCheckpointCommitment: output.commitment,
     };
 
+    this.log(`CheckpointProver`, `Generating proof...`);
     const { proof } = await generateSnarkProofSolidity({
       snarkJs: this.snarkJs,
       circuitPath: this.circuitPath,
@@ -137,5 +147,11 @@ export class CheckpointProver {
       proofArgs,
       withdrawData,
     };
+  }
+
+  log(...args: any[]) {
+    if (this.showLogs) {
+      console.log(...args);
+    }
   }
 }

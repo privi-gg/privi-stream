@@ -4,14 +4,13 @@ import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
 import { prepareCreate, prepareWithdraw } from './helpers/proofs';
 import { deployHasher } from './helpers/hasher';
 import { deployContract } from './helpers/utils';
-import { constants } from 'ethers';
 import { CHECKPOINT_TREE_LEVELS, STREAM_TREE_LEVELS } from './helpers/constants';
 import { Checkpoint, ShieldedWallet, Stream } from '@privi-stream/common';
 import { randomHex } from 'privi-utils';
 
 const { utils } = ethers;
 
-describe.only('WTokenGateway', function () {
+describe('WTokenGateway', function () {
   async function setUpFixture() {
     const hasher = await deployHasher();
     const token = await deployContract('WTokenMock');
@@ -28,7 +27,6 @@ describe.only('WTokenGateway', function () {
       sanctionsList.address,
       createVerifier.address,
       withdrawVerifier.address,
-      constants.AddressZero,
     );
     const { data: initializeData } = await poolImpl.populateTransaction.initialize(
       STREAM_TREE_LEVELS,
@@ -47,7 +45,7 @@ describe.only('WTokenGateway', function () {
   }
 
   it('create works', async function () {
-    const { pool, wTokenGateway } = await loadFixture(setUpFixture);
+    const { pool, wTokenGateway, token } = await loadFixture(setUpFixture);
 
     const duration = 10000; // in sec.
     const rate = utils.parseEther('0.0001');
@@ -68,11 +66,12 @@ describe.only('WTokenGateway', function () {
       output: stream,
     });
 
-    await pool.create(proofArgs, createData);
-
     await wTokenGateway.create(pool.address, proofArgs, createData, {
       value: proofArgs.publicAmount,
     });
+
+    const poolBalance = await token.balanceOf(pool.address);
+    expect(poolBalance).to.equal(proofArgs.publicAmount);
   });
 
   it('withdraw works', async function () {

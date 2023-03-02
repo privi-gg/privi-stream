@@ -14,7 +14,7 @@
     "@emotion/styled": "^11",
     "@fontsource/space-grotesk": "^4.5.12",
     "@hookform/resolvers": "^2.9.10",
-    "@rainbow-me/rainbowkit": "^0.7.4",
+    "@rainbow-me/rainbowkit": "^0.8.1",
     "@tanstack/react-query": "^4.16.1",
     "@types/react-datepicker": "^4.8.0",
     "@wojtekmaj/react-datetimerange-picker": "^4.1.1",
@@ -30,10 +30,11 @@
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.39.3",
     "react-icons": "^4.6.0",
-    "wagmi": "^0.8.3",
+    "wagmi": "^0.9.0",
     "yup": "^0.32.11",
     "xcircomlib": "npm:circomlib@^0.5.5",
-    "@privi-stream/common": "*"
+    "@privi-stream/common": "*",
+    "privi-utils": "https://github.com/privi-gg/privi-utils.git#77e45aee0d65703b735f798d2ee0210085470f36"
   },
   "devDependencies": {
     "@babel/core": "^7.0.0",

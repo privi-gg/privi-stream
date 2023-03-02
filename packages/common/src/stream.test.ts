@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import { utils } from 'ethers';
 import { Stream } from './stream';
 import { ShieldedWallet } from './shieldedWallet';
+import { BN } from 'privi-utils';
 
 describe('Stream', function () {
   const createStream = (
@@ -45,6 +46,7 @@ describe('Stream', function () {
 
     const stream = createStream(senderShieldedWallet, receiverShieldedWallet);
 
+    expect(stream.duration).to.equal(stream.stopTime - stream.startTime);
     expect(stream.amount.toString()).to.equal(
       rate.mul(stream.stopTime - stream.startTime).toString(),
     );
@@ -69,11 +71,9 @@ describe('Stream', function () {
 
     const senderDecrypted = Stream.senderDecrypt(encryptedBySender, {
       senderShieldedWallet,
-      receiverShieldedWallet,
       leafIndex: 1,
     });
     const receiverDecrypted = Stream.receiverDecrypt(encryptedByReceiver, {
-      senderShieldedWallet,
       receiverShieldedWallet,
       leafIndex: 1,
     });
@@ -82,8 +82,21 @@ describe('Stream', function () {
     expect(senderDecrypted.startTime).to.equal(originalStream.startTime);
     expect(senderDecrypted.stopTime).to.equal(originalStream.stopTime);
 
+    expect(senderDecrypted.blinding.eq(originalStream.blinding)).to.be.true;
+    expect(
+      BN(senderDecrypted.receiverShieldedWallet?.publicKey).eq(
+        originalStream.receiverShieldedWallet?.publicKey as string,
+      ),
+    ).to.be.true;
+
     expect(receiverDecrypted.rate.eq(originalStream.rate)).to.be.true;
     expect(receiverDecrypted.startTime).to.equal(originalStream.startTime);
     expect(receiverDecrypted.stopTime).to.equal(originalStream.stopTime);
+    expect(receiverDecrypted.blinding.eq(originalStream.blinding)).to.be.true;
+    expect(
+      BN(receiverDecrypted.senderShieldedWallet?.publicKey).eq(
+        originalStream.senderShieldedWallet?.publicKey as string,
+      ),
+    ).to.be.true;
   });
 });

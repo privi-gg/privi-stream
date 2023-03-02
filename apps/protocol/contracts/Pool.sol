@@ -27,7 +27,6 @@ contract Pool is
 
     IVerifier public immutable createVerifier;
     IVerifier public immutable checkpointVerifier;
-    IVerifier public immutable revokeVerifier;
     IERC20 public immutable token;
 
     mapping(bytes32 => bool) public streamNullifierHashes;
@@ -38,13 +37,11 @@ contract Pool is
         address hasher_,
         address sanctionsList_,
         IVerifier createVerifier_,
-        IVerifier checkpointVerifier_,
-        IVerifier revokeVerifier_
+        IVerifier checkpointVerifier_
     ) MerkleTrees(hasher_) Compliance(sanctionsList_) {
         token = token_;
         createVerifier = createVerifier_;
         checkpointVerifier = checkpointVerifier_;
-        revokeVerifier = revokeVerifier_;
     }
 
     function initialize(uint32 numStreamLevels_, uint32 numCheckpointLevels_) external initializer {
@@ -130,6 +127,8 @@ contract Pool is
         if (!hasKnownStreamRoot(args.streamRoot) || !hasKnownCheckpointRoot(args.checkpointRoot)) {
             revert UnknownMerkleRoot();
         }
+
+        //@todo prevent nullified streams from being used
 
         if (isCheckpointNullifierUsed(args.inCheckpointNullifier)) {
             revert InputNullifierAlreadyUsed(args.inCheckpointNullifier);

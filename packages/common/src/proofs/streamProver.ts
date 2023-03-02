@@ -33,6 +33,14 @@ export class StreamProver {
   }
 
   async generateProof({ output }: PrepareCreateArgs) {
+    if (!output.senderShieldedWallet) {
+      throw new Error('Sender shielded wallet is not set');
+    }
+
+    if (!output.receiverShieldedWallet) {
+      throw new Error('Receiver shielded wallet is not set');
+    }
+
     const proofInput = {
       publicAmount: output.amount,
       startTime: output.startTime,

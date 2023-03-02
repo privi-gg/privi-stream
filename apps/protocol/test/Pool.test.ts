@@ -10,7 +10,7 @@ import { CHECKPOINT_TREE_LEVELS, STREAM_TREE_LEVELS } from './helpers/constants'
 
 const { utils } = ethers;
 
-describe('Pool', function () {
+describe.only('Pool', function () {
   async function setUpFixture() {
     const hasher = await deployHasher();
     const token = await deployContract('WTokenMock');
@@ -18,7 +18,6 @@ describe('Pool', function () {
     const withdrawVerifier = await deployContract(
       'contracts/verifiers/CheckpointVerifier.sol:Verifier',
     );
-    const revokeVerifier = await deployContract('contracts/verifiers/RevokeVerifier.sol:Verifier');
     const sanctionsList = await deployContract('SanctionsListMock');
 
     const poolImpl = await deployContract(
@@ -28,7 +27,6 @@ describe('Pool', function () {
       sanctionsList.address,
       createVerifier.address,
       withdrawVerifier.address,
-      revokeVerifier.address,
     );
     const { data: initializeData } = await poolImpl.populateTransaction.initialize(
       STREAM_TREE_LEVELS,

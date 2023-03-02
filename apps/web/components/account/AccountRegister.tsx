@@ -1,3 +1,4 @@
+import { FC, useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -10,48 +11,61 @@ import {
   useClipboard,
   VStack,
 } from '@chakra-ui/react';
-import { useRegisterAccount } from 'api/registerAccount';
+import { useRegisterAccount } from 'api/account';
 import { CopyIcon, DownloadIcon } from 'components/icons';
-import { APP_NAME } from 'config/constants';
+import { APP_NAME, SIGN_MESSAGE } from 'config/constants';
 import { useUI } from 'contexts/ui';
-import { FC, useEffect, useState } from 'react';
 import { downloadTextFile } from 'utils/file';
 import logger from 'utils/logger';
-import { generateKeyPairFromSignature } from 'utils/stream';
-import { useAccount } from 'wagmi';
+import { generateShieldedWalletFromSignature } from 'utils/pool';
+import { useAccount, useSignMessage } from 'wagmi';
+import { useShieldedAccount } from 'contexts/shieldedAccount';
+import { ShieldedWallet } from '@privi-stream/common';
 
 const AccountRegister: FC<StackProps> = ({ ...props }) => {
-  const { modalData, closeModal } = useUI();
+  const { closeModal } = useUI();
   const [privateKey, setPrivateKey] = useState<string>('');
   const { hasCopied, onCopy, setValue } = useClipboard(privateKey);
-  const [isAgreed, setIsAgreed] = useState(false);
+  const [hasAgreed, setHasAgreed] = useState(false);
   const { address } = useAccount();
-  const { data: tx, error: txError, isLoading, isSuccess, write: register } = useRegisterAccount();
+  const { logIn } = useShieldedAccount();
+  const {
+    isError: isSignError,
+    isLoading: isSignLoading,
+    signMessageAsync,
+  } = useSignMessage({ message: SIGN_MESSAGE });
+  const {
+    isError: isRegisterError,
+    isLoading: isRegisterLoading,
+    isSuccess: isRegisterSuccess,
+    writeAsync: register,
+  } = useRegisterAccount();
 
   useEffect(() => {
-    if (!modalData?.signature) return;
-    const keyPair = generateKeyPairFromSignature(modalData.signature);
-    setValue(keyPair.privateKey);
-    setPrivateKey(keyPair.privateKey);
+    if (isRegisterSuccess) {
+      logIn(privateKey);
+      closeModal();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalData.signature]);
+  }, [isRegisterSuccess]);
 
-  useEffect(() => {
-    if (isSuccess) closeModal();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSuccess]);
-
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!privateKey) return;
-    const keyPair = generateKeyPairFromSignature(modalData.signature);
+    const keyPair = new ShieldedWallet(privateKey);
 
     const shieldedAddress = keyPair.address();
     logger.info(`Registering account:`, shieldedAddress);
-    console.log({ register });
 
-    register?.({
+    await register?.({
       recklesslySetUnpreparedArgs: [shieldedAddress],
     });
+  };
+
+  const handleSignMessage = async () => {
+    const signature = await signMessageAsync();
+    const keyPair = generateShieldedWalletFromSignature(signature);
+    setValue(keyPair.privateKey);
+    setPrivateKey(keyPair.privateKey);
   };
 
   const downloadKey = () => {
@@ -64,6 +78,44 @@ const AccountRegister: FC<StackProps> = ({ ...props }) => {
     }
   };
 
+  if (!privateKey) {
+    return (
+      <VStack alignItems="stretch" spacing={6} py={8} {...props}>
+        <Heading textAlign="center" fontSize="xl">
+          Generate Shielded Private Key
+        </Heading>
+
+        <Divider />
+
+        <Box px={8}>
+          <Text color="gray.500" textAlign="center" pb={4}>
+            Generate your shielded private key from your connected wallet. Your shielded private is
+            sensitive and used to access & spend your shielded funds.
+          </Text>
+
+          {isSignError && (
+            <Text
+              color="orange.400"
+              textAlign="center"
+              p={1}
+              borderColor="orange.400"
+              borderWidth={1}
+              rounded="md"
+              fontSize="sm"
+              mb={4}
+            >
+              Error getting signature. Try Again!
+            </Text>
+          )}
+
+          <Button w="full" onClick={handleSignMessage} isLoading={isSignLoading}>
+            Generate Key
+          </Button>
+        </Box>
+      </VStack>
+    );
+  }
+
   return (
     <VStack alignItems="stretch" spacing={6} py={8} {...props}>
       <Heading textAlign="center" fontSize="xl">
@@ -73,7 +125,7 @@ const AccountRegister: FC<StackProps> = ({ ...props }) => {
 
       <Box px={8}>
         <VStack alignItems="stretch">
-          <Text color="gray.500">
+          <Text color="gray.500" textAlign="center">
             To access your account in the future, it is important to back up your shielded key. DO
             NOT reveal your key to anyone, including the {APP_NAME} developers.
           </Text>
@@ -94,21 +146,35 @@ const AccountRegister: FC<StackProps> = ({ ...props }) => {
           </HStack>
         </VStack>
 
-        <Box py={2}>
-          <Checkbox isChecked={isAgreed} onChange={() => setIsAgreed(!isAgreed)}>
-            I backed up Shielded Private Key
+        <Box pt={2} pb={6}>
+          <Checkbox isChecked={hasAgreed} onChange={() => setHasAgreed(!hasAgreed)}>
+            I backed up my Shielded Private Key
           </Checkbox>
         </Box>
 
+        {isRegisterError && (
+          <Text
+            color="orange.400"
+            textAlign="center"
+            p={1}
+            borderColor="orange.400"
+            borderWidth={1}
+            rounded="md"
+            fontSize="sm"
+            mb={4}
+          >
+            Error setting up account. Try Again!
+          </Text>
+        )}
+
         <Button
           w="full"
-          mt={8}
           onClick={handleRegister}
-          isLoading={isLoading}
-          disabled={!isAgreed}
+          isLoading={isRegisterLoading}
+          isDisabled={!hasAgreed}
           alignSelf="stretch"
         >
-          Register
+          Set up Account
         </Button>
       </Box>
     </VStack>

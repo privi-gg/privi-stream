@@ -1,167 +1,133 @@
-import { Utxo } from '@privi-stream/common';
-import { TREE_HEIGHT } from 'config/constants';
-import { Contract, ethers } from 'ethers';
+import { BigNumberish, Contract, logger } from 'ethers';
+import {
+  ZERO_LEAF_STREAM,
+  ZERO_LEAF_CHECKPOINT,
+  Stream,
+  Checkpoint,
+  CheckpointProver,
+  FIELD_SIZE,
+  ShieldedWallet,
+} from '@privi-stream/common';
+import { formatEther, poseidonHash, toFixedHex } from 'privi-utils';
 import MerkleTree from 'fixed-merkle-tree';
-import { toFixedHex } from 'utils/eth';
-import { FIELD_SIZE, generateSnarkProofSolidity, poseidonHash, ZERO_VALUE } from 'utils/snark';
+import { fetchReceiverCheckpoints } from 'utils/pool';
 
-const { utils, BigNumber } = ethers;
+const STREAM_TREE_LEVELS = 21;
+const CHECKPOINT_TREE_LEVELS = 23;
 
-function hashExtData({ recipient, withdrawAmount, relayer, fee, encryptedOutput }: any) {
-  const abi = new utils.AbiCoder();
+const circuitPath = {
+  circuit: `/circuits/checkpoint.wasm`,
+  zKey: `/circuits/checkpoint.zkey`,
+};
 
-  const encodedData = abi.encode(
-    [
-      'tuple(address recipient,uint256 withdrawAmount,address relayer,uint256 fee,bytes encryptedOutput)',
-    ],
-    [
-      {
-        recipient: toFixedHex(recipient, 20),
-        withdrawAmount: toFixedHex(withdrawAmount),
-        relayer: toFixedHex(relayer, 20),
-        fee: toFixedHex(fee),
-        encryptedOutput,
-      },
-    ],
-  );
-  const hash = utils.keccak256(encodedData);
-  return BigNumber.from(hash).mod(FIELD_SIZE);
-}
-
-async function buildMerkleTree(tsunami: Contract) {
-  const filter = tsunami.filters.NewCommitment();
-  const events = await tsunami.queryFilter(filter, 0);
+async function buildStreamTree(pool: Contract) {
+  const filter = pool.filters.StreamInserted();
+  const events = await pool.queryFilter(filter, 0);
 
   const leaves = events
     .sort((a, b) => a.args?.leafIndex - b.args?.leafIndex)
     .map((e) => toFixedHex(e.args?.commitment));
-  return new MerkleTree(TREE_HEIGHT, leaves, {
+
+  return new MerkleTree(STREAM_TREE_LEVELS, leaves, {
     hashFunction: poseidonHash,
-    zeroElement: ZERO_VALUE,
+    zeroElement: ZERO_LEAF_STREAM,
   });
 }
 
-async function generateProof({
-  input,
-  output,
-  tree,
-  withdrawAmount,
-  fee,
-  recipient,
-  relayer,
-}: any) {
-  const circuit = 'withdraw';
+async function buildCheckpointTree(pool: Contract) {
+  const filter = pool.filters.CheckpointInserted();
+  const events = await pool.queryFilter(filter, 0);
 
-  let inputPathIndices;
-  let inputPathElements;
-
-  if (input.amount > 0) {
-    input.leafIndex = tree.indexOf(toFixedHex(input.commitment));
-    if (input.leafIndex < 0) {
-      throw new Error(`Input commitment ${toFixedHex(input.commitment)} was not found`);
-    }
-    inputPathIndices = input.leafIndex;
-    inputPathElements = tree.path(input.leafIndex).pathElements;
-  } else {
-    inputPathIndices = 0;
-    inputPathElements = new Array(tree.levels).fill(0);
-  }
-
-  const extData = {
-    recipient: toFixedHex(recipient, 20),
-    withdrawAmount: toFixedHex(withdrawAmount),
-    relayer: toFixedHex(relayer, 20),
-    fee: toFixedHex(fee),
-    encryptedOutput: output.encrypt({ useKeyPair: 'receiver' }),
-  };
-
-  const extDataHash = hashExtData(extData);
-  const publicAmount = BigNumber.from(withdrawAmount).add(fee);
-
-  const proofInput = {
-    root: tree.root,
-    extDataHash,
-    publicAmount,
-    // data for transaction inputs
-    inStartTime: input.startTime,
-    inStopTime: input.stopTime,
-    inCheckpointTime: input.checkpointTime,
-    inRate: input.rate,
-    inSenderPublicKey: input.senderKeyPair.publicKey,
-    inReceiverPrivateKey: input.receiverKeyPair.privateKey,
-    inBlinding: input.blinding,
-    inputNullifier: input.nullifier,
-    inPathIndices: inputPathIndices,
-    inPathElements: inputPathElements,
-    // data for transaction outputs
-    outCheckpointTime: output.checkpointTime,
-    outputCommitment: output.commitment,
-    outBlinding: output.blinding,
-  };
-
-  const { proof } = await generateSnarkProofSolidity(proofInput, circuit);
-
-  const proofArgs = {
-    proof,
-    root: toFixedHex(proofInput.root),
-    inputNullifier: toFixedHex(input.nullifier),
-    outputCommitment: toFixedHex(output.commitment),
-    extDataHash: toFixedHex(extDataHash),
-    publicAmount: toFixedHex(publicAmount),
-    checkpointTime: toFixedHex(output.checkpointTime),
-  };
-
-  return {
-    extData,
-    proofArgs,
-  };
+  const leaves = events
+    .sort((a, b) => a.args?.leafIndex - b.args?.leafIndex)
+    .map((e) => toFixedHex(e.args?.commitment));
+  return new MerkleTree(CHECKPOINT_TREE_LEVELS, leaves, {
+    hashFunction: poseidonHash,
+    zeroElement: ZERO_LEAF_CHECKPOINT,
+  });
 }
 
 export async function prepareWithdrawProof({
-  tsunami,
-  input,
-  output,
+  pool,
+  stream,
+  outCheckpointTime,
+  currentTime,
+  shieldedWallet,
+  recipient,
   fee = 0,
-  recipient = 0,
   relayer = 0,
-}: any) {
-  const withdrawAmount = input.rate.mul(output.checkpointTime - input.checkpointTime).toString();
+}: {
+  pool: Contract;
+  stream: Stream;
+  currentTime: number;
+  outCheckpointTime: number;
+  shieldedWallet: ShieldedWallet;
+  fee?: BigNumberish;
+  recipient: BigNumberish;
+  relayer?: BigNumberish;
+}) {
+  //@ts-ignore
+  const snarkJs = window.snarkjs;
+  if (currentTime < outCheckpointTime) {
+    throw new Error('Current time is less than output checkpoint time');
+  }
 
-  const tree = await buildMerkleTree(tsunami);
+  console.log({ stream, shieldedWallet });
 
-  const { proofArgs, extData } = await generateProof({
+  const checkpoints = await fetchReceiverCheckpoints(pool, shieldedWallet, stream);
+  let input = checkpoints.find((c) => c.stream.commitment === stream.commitment);
+  if (!input) {
+    logger.info(`No previous checkpoint found, using zero checkpoint as input`);
+    input = Checkpoint.zero(stream);
+    input.leafIndex = 0;
+  }
+
+  console.log({ stream, outCheckpointTime });
+  const output = new Checkpoint({
+    stream,
+    checkpointTime: outCheckpointTime,
+    shieldedWallet,
+  });
+
+  const withdrawAmount = stream.rate.mul(output.checkpointTime - input.checkpointTime);
+  logger.info(`Withdraw amount: ${formatEther(withdrawAmount)}`);
+
+  const streamTree = await buildStreamTree(pool);
+  const checkpointTree = await buildCheckpointTree(pool);
+  console.log('Built tree');
+
+  const prover = new CheckpointProver({
+    snarkJs,
+    fieldSize: FIELD_SIZE,
+    circuitPath,
+    streamTree,
+    checkpointTree,
+  });
+
+  // console.log(`Preparing proof`);
+  // console.log({
+  //   isZero: input.isZero(),
+  //   input,
+  //   output,
+  //   currentTime,
+  //   withdrawAmount,
+  //   fee,
+  //   recipient,
+  //   relayer,
+  // });
+  // console.log(`nullifier`, input.nullifier);
+
+  const { proofArgs, withdrawData: extData } = await prover.prepareCheckpointProof({
     input,
     output,
-    tree,
+    currentTime,
     withdrawAmount,
     fee,
     recipient,
     relayer,
   });
 
-  return {
-    proofArgs,
-    extData,
-  };
-}
-
-export async function prepareWithdraw({
-  tsunami,
-  input,
-  newCheckpointTime,
-  keyPairs,
-  recipient,
-}: any) {
-  const output = new Utxo({
-    startTime: input.startTime,
-    stopTime: input.stopTime,
-    checkpointTime: Math.min(newCheckpointTime, input.stopTime),
-    rate: input.rate,
-    senderKeyPair: keyPairs.sender,
-    receiverKeyPair: keyPairs.receiver,
-  });
-
-  const { proofArgs, extData } = await prepareWithdrawProof({ tsunami, input, output, recipient });
+  console.log('Proof prepared');
 
   return {
     proofArgs,

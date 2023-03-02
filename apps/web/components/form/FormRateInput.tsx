@@ -17,8 +17,8 @@ import {
 import { Control, useController } from 'react-hook-form';
 import { BalanceText } from 'components/account';
 import { TokenPriceText } from 'components/common';
-import { parseEther } from 'utils/eth';
-import useInstance from 'hooks/instance';
+import { useInstance } from 'contexts/instance';
+import { parseEther } from 'privi-utils';
 
 interface FormInputProps extends FormControlProps {
   name: string;
@@ -68,7 +68,7 @@ const FormRateInput: FC<FormInputProps> = ({
     >
       <HStack justify="space-between" alignItems="center" pt={2} px={4}>
         <FormLabel fontWeight="semibold">{label}</FormLabel>
-        <BalanceText label="Balance: " />
+        <BalanceText label="Balance: " instance={instance} />
       </HStack>
 
       <HStack
@@ -108,9 +108,9 @@ const FormRateInput: FC<FormInputProps> = ({
           px={2}
           py={2}
         >
-          <Avatar src={instance.iconUrl} size="xs" />
+          <Avatar src={instance.token.iconUrl} size="xs" />
           <Text fontWeight="bold" ml={1}>
-            {instance.currency}
+            {instance.token.symbol}
           </Text>
         </Card>
       </HStack>

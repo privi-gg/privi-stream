@@ -8,7 +8,7 @@ const { BigNumber, Wallet } = ethers;
 
 export class ShieldedWallet {
   privateKey: string;
-  publicKey: BigNumberish;
+  publicKey: string;
   encryptionKey: string;
 
   /**
@@ -16,7 +16,7 @@ export class ShieldedWallet {
    */
   constructor(privatekey = Wallet.createRandom().privateKey) {
     this.privateKey = privatekey;
-    this.publicKey = BN(poseidonHash(this.privateKey));
+    this.publicKey = BN(poseidonHash(this.privateKey)).toHexString();
     this.encryptionKey = getEncryptionPublicKey(privatekey.slice(2));
   }
 
@@ -32,8 +32,16 @@ export class ShieldedWallet {
     }
     return Object.assign(new ShieldedWallet(), {
       privateKey: '',
-      publicKey: BigNumber.from('0x' + address.slice(0, 64)),
+      publicKey: BigNumber.from('0x' + address.slice(0, 64)).toHexString(),
       encryptionKey: Buffer.from(address.slice(64, 128), 'hex').toString('base64'),
+    });
+  }
+
+  static fromPublicKey(publicKey: BigNumberish) {
+    return Object.assign(new ShieldedWallet(), {
+      privateKey: '',
+      publicKey: BigNumber.from(publicKey).toHexString(),
+      encryptionKey: '',
     });
   }
 

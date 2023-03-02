@@ -8,7 +8,7 @@ include "./keyPair.circom";
 // Stream { rate, startTime, stopTime, senderPubKey, receiverPubKey, blinding }
 // Checkpoint { streamCommitment, checkpointTime, blinding }
 // commitment = hash(Checkpoint)
-// nullifier = hash(commitment, merklePath)
+// nullifier = hash(commitment, blinding, merklePath)
 // The first ever input `Checkpoint` for a `Stream` should have:
 // checkpoint.checkpointTime == stream.startTime && checkpoint.blinding == stream.blinding
 // This is to have an initial "zero" input to spend & prevent multiple
@@ -114,9 +114,10 @@ template Checkpoint(nStreamLevels, nCheckpointLevels) {
     inCheckpointCommitmentHasher.inputs[2] <== inCheckpointBlinding;
 
     // Asserts correctness of checkpoint nullifier
-    component checkpointNullifierHasher = Poseidon(2);
+    component checkpointNullifierHasher = Poseidon(3);
     checkpointNullifierHasher.inputs[0] <== inCheckpointCommitmentHasher.out;
-    checkpointNullifierHasher.inputs[1] <== inCheckpointPathIndices;
+    checkpointNullifierHasher.inputs[1] <== inCheckpointBlinding;
+    checkpointNullifierHasher.inputs[2] <== inCheckpointPathIndices;
     checkpointNullifierHasher.out === inCheckpointNullifier;
 
     // Asserts checkpoint existence in tree

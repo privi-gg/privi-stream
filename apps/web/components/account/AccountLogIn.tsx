@@ -1,12 +1,13 @@
-import { useState } from 'react';
 import {
   Box,
   Button,
+  Center,
   Circle,
   Divider,
   Heading,
   HStack,
   Icon,
+  Skeleton,
   Spinner,
   StackProps,
   Text,
@@ -15,15 +16,16 @@ import {
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { FormInput } from 'components/common/form';
 import { useShieldedAccount } from 'contexts/shieldedAccount';
 import logger from 'utils/logger';
-import { isDev } from 'config/env';
-import { useUI } from 'contexts/ui';
+import { isDev, testShieldedPk1 } from 'config/env';
+import { modalViews, useUI } from 'contexts/ui';
 import { APP_NAME, SIGN_MESSAGE } from 'config/constants';
 import { useSignMessage } from 'wagmi';
-import { generateKeyPairFromSignature } from 'utils/stream';
-import { ArrowRightIcon, KeyIcon, WalletIcon } from 'components/icons';
+import { ArrowRightIcon, KeyIcon, PlusIcon, WalletIcon } from 'components/icons';
+import { useState } from 'react';
+import { FormTextInput } from 'components/form';
+import { generateShieldedWalletFromSignature } from 'utils/pool';
 
 const schema = yup.object().shape({
   privateKey: yup
@@ -36,13 +38,12 @@ interface ILogInInput {
   privateKey: string;
 }
 
-// 0x17127c3cf67b647bbebc58a63911f35903bff485c4aa47295366c485cc6ab2bb
 const defaultValues = {
-  privateKey: isDev ? '0x1f84f832b1f8ca56b5173ca1840b06619a1f8678b90a52e6e5b16654112c393f' : '',
+  privateKey: isDev ? testShieldedPk1 : '',
 };
 
 const AccountLogIn: React.FC<StackProps> = ({ ...props }) => {
-  const { closeModal } = useUI();
+  const { closeModal, setModalViewAndOpen, setModalData } = useUI();
   const [showLogInForm, setShowLogInForm] = useState(false);
   const { control, handleSubmit } = useForm<ILogInInput>({
     resolver: yupResolver(schema),
@@ -51,13 +52,18 @@ const AccountLogIn: React.FC<StackProps> = ({ ...props }) => {
   const { isLoading: isSignatureLoading, signMessageAsync } = useSignMessage({
     message: SIGN_MESSAGE,
   });
-  const { logIn } = useShieldedAccount();
+  const { logIn, isLoading, isRegistered } = useShieldedAccount();
 
   const handleWalletLogin = async () => {
     const signature = await signMessageAsync();
-    const keyPair = generateKeyPairFromSignature(signature);
+    const keyPair = generateShieldedWalletFromSignature(signature);
     logIn(keyPair.privateKey);
     closeModal();
+  };
+
+  const handleSetUp = () => {
+    setModalData({ promptSignature: true });
+    setModalViewAndOpen(modalViews.ACCOUNT_REGISTER);
   };
 
   const submit = (data: any) => {
@@ -85,7 +91,7 @@ const AccountLogIn: React.FC<StackProps> = ({ ...props }) => {
   }
 
   return (
-    <VStack alignItems="stretch" spacing={6} py={8} {...props}>
+    <VStack alignItems="stretch" spacing={6} pt={8} {...props}>
       <Heading textAlign="center" fontSize="xl">
         Log in to {APP_NAME}
       </Heading>
@@ -94,7 +100,7 @@ const AccountLogIn: React.FC<StackProps> = ({ ...props }) => {
       <Box py={4} px={8}>
         {showLogInForm ? (
           <VStack as="form" onSubmit={handleSubmit(submit)} alignItems="stretch" spacing={4}>
-            <FormInput label="Enter Shielded Private Key" name="privateKey" control={control} />
+            <FormTextInput label="Enter Shielded Private Key" name="privateKey" control={control} />
             <Button type="submit">Log In</Button>
             <Button onClick={() => setShowLogInForm(false)} variant="ghost" colorScheme="gray">
               Back
@@ -102,7 +108,7 @@ const AccountLogIn: React.FC<StackProps> = ({ ...props }) => {
           </VStack>
         ) : (
           <Box>
-            <VStack alignItems="stretch" alignSelf="stretch" pb={8}>
+            <VStack alignItems="stretch" alignSelf="stretch">
               <HStack
                 as="button"
                 justify="space-between"
@@ -117,7 +123,9 @@ const AccountLogIn: React.FC<StackProps> = ({ ...props }) => {
                   <Circle bgColor="white" rounded="full" size={8}>
                     <Icon as={WalletIcon} color="blue.400" />
                   </Circle>
-                  <Text fontWeight="bold">Use Wallet</Text>
+                  <VStack>
+                    <Text fontWeight="bold">Use Wallet</Text>
+                  </VStack>
                 </HStack>
                 <ArrowRightIcon />
               </HStack>
@@ -140,9 +148,39 @@ const AccountLogIn: React.FC<StackProps> = ({ ...props }) => {
                 <ArrowRightIcon />
               </HStack>
             </VStack>
-            <Divider />
 
-            <Box textAlign="center" pt={6}>
+            {isLoading && <Skeleton h={10} w="full" rounded="md" mt={4} />}
+
+            {!isRegistered && !isLoading && (
+              <VStack alignItems="stretch" textAlign="center" pt={6} spacing={4}>
+                <Center position="relative">
+                  <Divider position="absolute" top={0} bottom={0} left={0} right={0} my="auto" />
+                  <Text position="relative" textAlign="center" bg="white" px={2}>
+                    Or set up a new account
+                  </Text>
+                </Center>
+                <HStack
+                  as="button"
+                  justify="space-between"
+                  alignItems="center"
+                  rounded="md"
+                  p={4}
+                  bgColor="gray.100"
+                  _hover={{ bgColor: 'gray.200' }}
+                  onClick={handleSetUp}
+                >
+                  <HStack spacing={4}>
+                    <Circle bgColor="white" rounded="full" size={8}>
+                      <Icon as={PlusIcon} color="blue.400" />
+                    </Circle>
+                    <Text fontWeight="bold">Set Up Account</Text>
+                  </HStack>
+                  <ArrowRightIcon />
+                </HStack>
+              </VStack>
+            )}
+
+            <Box textAlign="center" pt={8} pb={4}>
               New to Ethereum? Learn more about wallets.
             </Box>
           </Box>

@@ -1,63 +1,45 @@
-import { Utxo } from '@privi-stream/common';
-import dayjs from 'dayjs';
-import { parseEther, toFixedHex } from 'utils/eth';
-import { generateSnarkProofSolidity } from 'utils/snark';
+import { FIELD_SIZE, ShieldedWallet, Stream, StreamProver } from '@privi-stream/common';
+import { BigNumberish } from 'ethers';
 
-async function generateProof({ output }: any) {
-  const circuit = 'create';
+const circuitPath = {
+  circuit: `/circuits/create.wasm`,
+  zKey: `/circuits/create.zkey`,
+};
 
-  const proofInput = {
-    publicAmount: output.amount,
-    startTime: output.startTime,
-    stopTime: output.stopTime,
-    checkpointTime: output.checkpointTime,
-    rate: output.rate,
-    senderPrivateKey: output.senderKeyPair.privateKey,
-    receiverPublicKey: output.receiverKeyPair.publicKey,
-    blinding: output.blinding,
-    commitment: output.commitment,
-  };
+export async function prepareCreateProof({
+  startTime,
+  stopTime,
+  rate,
+  from,
+  to,
+}: {
+  startTime: number;
+  stopTime: number;
+  rate: BigNumberish;
+  from: ShieldedWallet;
+  to: ShieldedWallet;
+}) {
+  //@ts-ignore
+  const snarkJs = window.snarkjs;
 
-  const { proof } = await generateSnarkProofSolidity(proofInput, circuit);
+  const prover = new StreamProver({
+    snarkJs,
+    fieldSize: FIELD_SIZE,
+    circuitPath,
+  });
 
-  const proofArgs = {
-    proof,
-    publicAmount: toFixedHex(proofInput.publicAmount),
-    commitment: toFixedHex(proofInput.commitment),
-  };
+  const output = new Stream({
+    startTime,
+    stopTime,
+    rate,
+    senderShieldedWallet: from,
+    receiverShieldedWallet: to,
+  });
+
+  const { proofArgs, createData } = await prover.prepareCreateProof({ output });
 
   return {
     proofArgs,
-  };
-}
-
-export async function prepareCreateProof({ output }: any) {
-  const { proofArgs } = await generateProof({
-    output,
-  });
-
-  return {
-    proofArgs,
-    encryptedOutput: output.encrypt(),
-  };
-}
-
-export async function prepareCreate({ startTime, stopTime, rate, keyPairs }: any) {
-  const output = new Utxo({
-    startTime: dayjs(startTime).unix(),
-    stopTime: dayjs(stopTime).unix(),
-    checkpointTime: dayjs(startTime).unix(),
-    rate: parseEther(`${rate}`),
-    senderKeyPair: keyPairs.sender,
-    receiverKeyPair: keyPairs.receiver,
-  });
-
-  const { proofArgs, encryptedOutput } = await prepareCreateProof({
-    output,
-  });
-
-  return {
-    proofArgs,
-    encryptedOutput,
+    createData,
   };
 }
