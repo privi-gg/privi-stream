@@ -1,19 +1,19 @@
 import { FC, useEffect, useState } from 'react';
-import { Utxo } from '@privi-stream/common';
 import { Avatar, Box, HStack, Progress, StackProps, Text, VStack } from '@chakra-ui/react';
-import { BN, formatEther, formatUnits } from 'utils/eth';
 import dayjs from 'dayjs';
 import { useProvider } from 'wagmi';
-import useInstance from 'hooks/instance';
 import { CheckCircleIcon, TimeIcon } from 'components/icons';
 import { formatTimeDuration } from 'utils/datetime';
 import { TokenPriceText } from 'components/common';
+import { Checkpoint, Stream } from '@privi-stream/common';
+import { useInstance } from 'contexts/instance';
+import { BN, formatEther, formatUnits } from 'privi-utils';
 
 interface IStreamDetailsProps extends StackProps {
-  stream: Utxo;
+  checkpoint: Checkpoint;
 }
 
-const StreamDetails: FC<IStreamDetailsProps> = ({ stream, ...props }) => {
+const StreamDetails: FC<IStreamDetailsProps> = ({ checkpoint, ...props }) => {
   const provider = useProvider();
   const { instance } = useInstance();
   const [progress, setProgress] = useState(0);
@@ -21,6 +21,7 @@ const StreamDetails: FC<IStreamDetailsProps> = ({ stream, ...props }) => {
   const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
+    const stream = checkpoint?.stream;
     if (!stream) return;
 
     provider
@@ -30,10 +31,10 @@ const StreamDetails: FC<IStreamDetailsProps> = ({ stream, ...props }) => {
         const min = Math.min(currentTime, stream.stopTime);
         setTimeLeft(stream.stopTime - min);
 
-        if (currentTime <= stream.checkpointTime) {
+        if (currentTime <= checkpoint.checkpointTime) {
           setStreamedAmount(BN(0));
         } else {
-          const amt = stream.rate.mul(min - stream.checkpointTime);
+          const amt = stream.rate.mul(min - checkpoint.checkpointTime);
           setStreamedAmount(amt);
         }
 
@@ -46,8 +47,9 @@ const StreamDetails: FC<IStreamDetailsProps> = ({ stream, ...props }) => {
           setProgress(progress);
         }
       });
-  }, [stream, provider]);
+  }, [checkpoint, provider]);
 
+  const stream = checkpoint?.stream;
   const amount = formatEther(stream.amount || 0);
   const rate = formatEther(stream.rate || 0);
   const startTime = dayjs(stream.startTime * 1000).format('DD MMM hh:mm A');
@@ -88,7 +90,7 @@ const StreamDetails: FC<IStreamDetailsProps> = ({ stream, ...props }) => {
           rounded="2xl"
           p={1}
         >
-          {formatUnits(streamedAmount, 18)} / {amount} {instance.currency}
+          {formatUnits(streamedAmount, 18)} / {amount} {instance.token.symbol}
         </Box>
       </HStack>
 
@@ -99,8 +101,8 @@ const StreamDetails: FC<IStreamDetailsProps> = ({ stream, ...props }) => {
             <TokenPriceText amount={stream.rate} fontWeight="bold" color="gray.500" />
 
             <Text fontWeight="bold">{rate}</Text>
-            <Avatar src={instance.iconUrl} size="xs" />
-            <Text fontWeight="bold">{instance.currency} / sec</Text>
+            <Avatar src={instance.token.iconUrl} size="xs" />
+            <Text fontWeight="bold">{instance.token.symbol} / sec</Text>
           </HStack>
         </HStack>
 

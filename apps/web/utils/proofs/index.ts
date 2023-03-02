@@ -1,3 +1,2 @@
-export { prepareCreate } from './create';
-export { prepareWithdraw } from './withdraw';
-export { prepareRevoke } from './revoke';
+export { prepareCreateProof } from './create';
+export { prepareWithdrawProof } from './withdraw';

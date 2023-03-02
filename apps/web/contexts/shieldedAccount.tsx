@@ -8,17 +8,20 @@ import {
   useEffect,
 } from 'react';
 import { useAccount } from 'wagmi';
-// import { useGetShieldedAccount } from 'api/account';
-import { KeyPair } from '@privi-stream/common';
+import { useGetShieldedAccount } from 'api/account';
+import { ShieldedWallet } from '@privi-stream/common';
+import { modalViews, useUI } from './ui';
 
 interface State {
   isLoggedIn: boolean;
+  balance: number | string;
   privateKey: string;
-  keyPair?: KeyPair;
+  shieldedWallet?: ShieldedWallet;
 }
 
 const initialState: State = {
   isLoggedIn: false,
+  balance: '0',
   privateKey: '',
 };
 
@@ -27,29 +30,34 @@ ShieldedAccountContext.displayName = 'ShieldedAccountContext';
 
 export const ShieldedAccountProvider: FC<PropsWithChildren> = ({ children }) => {
   const [privateKey, setPrivateKey] = useState<string>('');
-  const { address } = useAccount();
-  //   const { data: shieldedAccount, isFetching: isAccountFetching } = useGetShieldedAccount();
+  const { address, isConnected } = useAccount();
+  const { setModalViewAndOpen, setModalConfig } = useUI();
+  const { data: shieldedAccount, isLoading } = useGetShieldedAccount({ address });
 
   useEffect(() => {
-    // Log out
-    setPrivateKey('');
-  }, [address]);
+    const isNotLoggedIn = !privateKey;
+
+    if (isConnected && isNotLoggedIn) {
+      setModalConfig({ closeOnOverlayClick: false });
+      setModalViewAndOpen(modalViews.ACCOUNT_LOGIN);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, privateKey]);
 
   const logOut = () => setPrivateKey('');
 
   const value = useMemo(
     () => ({
-      logIn: (pk: string) => setPrivateKey(pk),
+      logIn: setPrivateKey,
       logOut,
       privateKey,
       isLoggedIn: !!privateKey,
-      keyPair: privateKey ? new KeyPair(privateKey) : undefined,
-      //   isLoading: isAccountFetching && !shieldedAccount,
-      //   address: shieldedAccount?.address,
-      //   isRegistered: shieldedAccount?.isRegistered,
+      shieldedWallet: privateKey ? new ShieldedWallet(privateKey) : undefined,
+      isLoading,
+      address: shieldedAccount?.address,
+      isRegistered: shieldedAccount?.isRegistered,
     }),
-    [privateKey, setPrivateKey],
-    // [privateKey, , isAccountFetching, , shieldedAccount, setPrivateKey],
+    [privateKey, shieldedAccount, setPrivateKey, isLoading],
   );
 
   return (

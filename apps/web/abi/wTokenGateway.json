@@ -14,8 +14,45 @@
     {
       "inputs": [
         {
+          "internalType": "uint256",
+          "name": "sent",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "required",
+          "type": "uint256"
+        }
+      ],
+      "name": "InvalidValueSent",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
           "internalType": "address",
-          "name": "tsunami",
+          "name": "recipient",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "gateway",
+          "type": "address"
+        }
+      ],
+      "name": "RecipientNotGateway",
+      "type": "error"
+    },
+    {
+      "inputs": [],
+      "name": "ZeroRecipientAddress",
+      "type": "error"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "pool",
           "type": "address"
         },
         {
@@ -38,7 +75,7 @@
                   "type": "uint256[2]"
                 }
               ],
-              "internalType": "struct DataTypes.Proof",
+              "internalType": "struct Proof",
               "name": "proof",
               "type": "tuple"
             },
@@ -53,128 +90,31 @@
               "type": "uint256"
             }
           ],
-          "internalType": "struct DataTypes.CreateProofArgs",
+          "internalType": "struct CreateProofArgs",
           "name": "args",
           "type": "tuple"
         },
         {
-          "internalType": "bytes",
-          "name": "encryptedOutput",
-          "type": "bytes"
+          "components": [
+            {
+              "internalType": "bytes",
+              "name": "encryptedDataSender",
+              "type": "bytes"
+            },
+            {
+              "internalType": "bytes",
+              "name": "encryptedDataReceiver",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct CreateData",
+          "name": "data",
+          "type": "tuple"
         }
       ],
       "name": "create",
       "outputs": [],
       "stateMutability": "payable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "tsunami",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
-          "name": "unwrappedTokenReceiver",
-          "type": "address"
-        },
-        {
-          "components": [
-            {
-              "components": [
-                {
-                  "internalType": "uint256[2]",
-                  "name": "a",
-                  "type": "uint256[2]"
-                },
-                {
-                  "internalType": "uint256[2][2]",
-                  "name": "b",
-                  "type": "uint256[2][2]"
-                },
-                {
-                  "internalType": "uint256[2]",
-                  "name": "c",
-                  "type": "uint256[2]"
-                }
-              ],
-              "internalType": "struct DataTypes.Proof",
-              "name": "proof",
-              "type": "tuple"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "root",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "inputNullifier",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "outputCommitment",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "extDataHash",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "uint256",
-              "name": "publicAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "uint256",
-              "name": "stopTime",
-              "type": "uint256"
-            }
-          ],
-          "internalType": "struct DataTypes.RevokeProofArgs",
-          "name": "args",
-          "type": "tuple"
-        },
-        {
-          "components": [
-            {
-              "internalType": "address",
-              "name": "recipient",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "withdrawAmount",
-              "type": "uint256"
-            },
-            {
-              "internalType": "address",
-              "name": "relayer",
-              "type": "address"
-            },
-            {
-              "internalType": "uint256",
-              "name": "fee",
-              "type": "uint256"
-            },
-            {
-              "internalType": "bytes",
-              "name": "encryptedOutput",
-              "type": "bytes"
-            }
-          ],
-          "internalType": "struct DataTypes.ExtData",
-          "name": "extData",
-          "type": "tuple"
-        }
-      ],
-      "name": "revoke",
-      "outputs": [],
-      "stateMutability": "nonpayable",
       "type": "function"
     },
     {
@@ -194,7 +134,7 @@
       "inputs": [
         {
           "internalType": "address",
-          "name": "tsunami",
+          "name": "pool",
           "type": "address"
         },
         {
@@ -222,29 +162,14 @@
                   "type": "uint256[2]"
                 }
               ],
-              "internalType": "struct DataTypes.Proof",
+              "internalType": "struct Proof",
               "name": "proof",
               "type": "tuple"
             },
             {
-              "internalType": "bytes32",
-              "name": "root",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "inputNullifier",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "outputCommitment",
-              "type": "bytes32"
-            },
-            {
-              "internalType": "bytes32",
-              "name": "extDataHash",
-              "type": "bytes32"
+              "internalType": "uint256",
+              "name": "currentTime",
+              "type": "uint256"
             },
             {
               "internalType": "uint256",
@@ -252,12 +177,27 @@
               "type": "uint256"
             },
             {
-              "internalType": "uint256",
-              "name": "checkpointTime",
-              "type": "uint256"
+              "internalType": "bytes32",
+              "name": "streamRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "checkpointRoot",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "inCheckpointNullifier",
+              "type": "bytes32"
+            },
+            {
+              "internalType": "bytes32",
+              "name": "outCheckpointCommitment",
+              "type": "bytes32"
             }
           ],
-          "internalType": "struct DataTypes.WithdrawProofArgs",
+          "internalType": "struct CheckpointProofArgs",
           "name": "args",
           "type": "tuple"
         },
@@ -285,11 +225,11 @@
             },
             {
               "internalType": "bytes",
-              "name": "encryptedOutput",
+              "name": "encryptedData",
               "type": "bytes"
             }
           ],
-          "internalType": "struct DataTypes.ExtData",
+          "internalType": "struct ExtData",
           "name": "extData",
           "type": "tuple"
         }

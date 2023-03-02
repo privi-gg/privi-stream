@@ -1,174 +1,133 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { loadFixture, time } from '@nomicfoundation/hardhat-network-helpers';
-import { Utxo, KeyPair } from '@privi-stream/common';
-import { deployHasher } from '../scripts/hasher';
-import { deployContract, randomHex } from './helpers/utils';
-import { TREE_HEIGHT } from './helpers/constants';
-import { prepareCreate, prepareRevoke, prepareWithdraw } from './helpers/proofs';
+import { prepareCreate, prepareWithdraw } from './helpers/proofs';
+import { deployHasher } from './helpers/hasher';
+import { deployContract } from './helpers/utils';
+import { CHECKPOINT_TREE_LEVELS, STREAM_TREE_LEVELS } from './helpers/constants';
+import { Checkpoint, ShieldedWallet, Stream } from '@privi-stream/common';
+import { randomHex } from 'privi-utils';
 
 const { utils } = ethers;
 
 describe('WTokenGateway', function () {
-  async function fixture() {
+  async function setUpFixture() {
     const hasher = await deployHasher();
-    const weth = await deployContract('WETHMock');
+    const token = await deployContract('WTokenMock');
     const createVerifier = await deployContract('contracts/verifiers/CreateVerifier.sol:Verifier');
     const withdrawVerifier = await deployContract(
-      'contracts/verifiers/WithdrawVerifier.sol:Verifier',
+      'contracts/verifiers/CheckpointVerifier.sol:Verifier',
     );
-    const revokeVerifier = await deployContract('contracts/verifiers/RevokeVerifier.sol:Verifier');
-    const maxDepositAmt = utils.parseEther('100');
+    const sanctionsList = await deployContract('SanctionsListMock');
 
-    const tsunami = await deployContract(
-      'Tsunami',
-      TREE_HEIGHT,
-      maxDepositAmt,
-      weth.address,
+    const poolImpl = await deployContract(
+      'Pool',
+      token.address,
       hasher.address,
+      sanctionsList.address,
       createVerifier.address,
       withdrawVerifier.address,
-      revokeVerifier.address,
     );
-    const wethGateway = await deployContract('WTokenGateway', weth.address);
+    const { data: initializeData } = await poolImpl.populateTransaction.initialize(
+      STREAM_TREE_LEVELS,
+      CHECKPOINT_TREE_LEVELS,
+    );
+    const poolProxy = await deployContract('PoolProxyMock', poolImpl.address, initializeData);
+    const pool = poolImpl.attach(poolProxy.address);
+
+    const wTokenGateway = await deployContract('WTokenGateway', token.address);
 
     const amount = utils.parseEther('8000').toString();
-    await weth.deposit({ value: amount });
-    await weth.approve(tsunami.address, amount);
+    await token.deposit({ value: amount });
+    await token.approve(pool.address, amount);
 
-    return { hasher, tsunami, weth, wethGateway };
+    return { hasher, pool, token, poolImpl, poolProxy, wTokenGateway };
   }
 
   it('create works', async function () {
-    const { tsunami, wethGateway, weth } = await loadFixture(fixture);
-    const [sender, receiver] = await ethers.getSigners();
-    const currentTime = await time.latest();
+    const { pool, wTokenGateway, token } = await loadFixture(setUpFixture);
 
     const duration = 10000; // in sec.
     const rate = utils.parseEther('0.0001');
-    const startTime = currentTime;
+    const startTime = await time.latest();
     const stopTime = startTime + duration;
-    const [senderKeyPair, receiverKeyPair] = KeyPair.createRandomPairs();
+    const senderSw = ShieldedWallet.createRandom();
+    const receiverSw = ShieldedWallet.createRandom();
 
-    const createUtxo = new Utxo({
+    const stream = new Stream({
+      rate,
       startTime,
       stopTime,
-      checkpointTime: startTime,
-      rate,
-      senderKeyPair,
-      receiverKeyPair,
+      senderShieldedWallet: senderSw,
+      receiverShieldedWallet: receiverSw,
     });
 
-    const { proofArgs: createProofArgs, encryptedOutput } = await prepareCreate({
-      output: createUtxo,
+    const { proofArgs, createData } = await prepareCreate({
+      output: stream,
     });
 
-    await wethGateway.create(tsunami.address, createProofArgs, encryptedOutput, {
-      value: createProofArgs.publicAmount,
+    await wTokenGateway.create(pool.address, proofArgs, createData, {
+      value: proofArgs.publicAmount,
     });
+
+    const poolBalance = await token.balanceOf(pool.address);
+    expect(poolBalance).to.equal(proofArgs.publicAmount);
   });
 
   it('withdraw works', async function () {
-    const { tsunami, weth, wethGateway } = await loadFixture(fixture);
-    const [sender, receiver] = await ethers.getSigners();
-    const currentTime = await time.latest();
-
-    const duration = 10000; // in sec.
-    const rate = utils.parseEther('0.0001'); // wei/sec
-    const startTime = currentTime;
-    const stopTime = startTime + duration;
-    const [senderKeyPair, receiverKeyPair] = KeyPair.createRandomPairs();
-
-    const createUtxo = new Utxo({
-      startTime,
-      stopTime,
-      checkpointTime: startTime,
-      rate,
-      senderKeyPair,
-      receiverKeyPair,
-    });
-
-    const { proofArgs: createProofArgs, encryptedOutput } = await prepareCreate({
-      output: createUtxo,
-    });
-
-    await wethGateway.create(tsunami.address, createProofArgs, encryptedOutput, {
-      value: createProofArgs.publicAmount,
-    });
-
-    // 5000 sec passed
-    await time.increaseTo(startTime + 5000);
-
-    const withdrawDuration = 4000;
-    const withdrawAmount = rate.mul(withdrawDuration);
-    const withdrawCheckpointTime = startTime + withdrawDuration;
-    const recipient = randomHex(20);
-
-    const withdrawUtxo = createUtxo.withdraw(withdrawCheckpointTime);
-
-    const { proofArgs: proofArgs1, extData: extData1 } = await prepareWithdraw({
-      tsunami,
-      input: createUtxo,
-      output: withdrawUtxo,
-      recipient: wethGateway.address,
-    });
-
-    const spent = await tsunami.isSpent(proofArgs1.inputNullifier);
-    expect(spent).to.be.equal(false);
-
-    await wethGateway.withdraw(tsunami.address, recipient, proofArgs1, extData1);
-
-    const balance1 = await ethers.provider.getBalance(recipient);
-    expect(balance1).to.equal(withdrawAmount);
-  });
-
-  it('revoke works', async function () {
-    const { tsunami, wethGateway } = await loadFixture(fixture);
-    const currentTime = await time.latest();
+    const { pool, wTokenGateway } = await loadFixture(setUpFixture);
 
     const duration = 10000; // in sec.
     const rate = utils.parseEther('0.0001');
-    const startTime = currentTime;
+    const startTime = await time.latest();
     const stopTime = startTime + duration;
-    const checkpointTime = startTime;
-    const [senderKeyPair, receiverKeyPair] = KeyPair.createRandomPairs();
+    const senderSw = ShieldedWallet.createRandom();
+    const receiverSw = ShieldedWallet.createRandom();
 
-    const createUtxo = new Utxo({
+    const stream = new Stream({
+      rate,
       startTime,
       stopTime,
-      checkpointTime,
-      rate,
-      senderKeyPair,
-      receiverKeyPair,
+      senderShieldedWallet: senderSw,
+      receiverShieldedWallet: receiverSw,
     });
 
-    const { proofArgs: createProofArgs, encryptedOutput } = await prepareCreate({
-      output: createUtxo,
+    const { proofArgs: createProofArgs, createData } = await prepareCreate({
+      output: stream,
     });
 
-    await wethGateway.create(tsunami.address, createProofArgs, encryptedOutput, {
+    await pool.create(createProofArgs, createData);
+
+    await wTokenGateway.create(pool.address, createProofArgs, createData, {
       value: createProofArgs.publicAmount,
     });
 
-    // 5000 sec passed
-    await time.increaseTo(startTime + 5000);
+    // half duration passed
+    const recipient = randomHex(20);
+    const checkpointTime = stream.startTime + Math.round(stream.duration / 2);
+    await time.increaseTo(checkpointTime + 100);
 
-    const revokeStopTime = startTime + 5000 + 500;
-    const senderWithdrawAmount = rate.mul(stopTime - revokeStopTime);
-    const senderRecipient = randomHex(20);
-
-    const revokeUtxo = createUtxo.revoke(revokeStopTime);
-
-    const { proofArgs: revokeProofArgs, extData: extData } = await prepareRevoke({
-      tsunami,
-      input: createUtxo,
-      output: revokeUtxo,
-      recipient: wethGateway.address,
+    const checkpoint = new Checkpoint({
+      stream,
+      checkpointTime,
+      shieldedWallet: stream.receiverShieldedWallet,
     });
 
-    await wethGateway.revoke(tsunami.address, senderRecipient, revokeProofArgs, extData);
+    const currentTime = await time.latest();
 
-    const balance1 = await ethers.provider.getBalance(senderRecipient);
-    expect(balance1).to.equal(senderWithdrawAmount);
+    const { proofArgs: withdrawProofArgs, extData } = await prepareWithdraw({
+      pool,
+      input: Checkpoint.zero(stream),
+      output: checkpoint,
+      currentTime,
+      recipient: wTokenGateway.address,
+    });
+
+    const withdrawAmount = stream.rate.mul(checkpointTime - stream.startTime);
+
+    await wTokenGateway.withdraw(pool.address, recipient, withdrawProofArgs, extData);
+
+    const balance = await ethers.provider.getBalance(recipient);
+    expect(balance).to.equal(withdrawAmount);
   });
 });

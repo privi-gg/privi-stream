@@ -1,3 +1,4 @@
+import { ModalProps } from '@chakra-ui/react';
 import React, {
   useReducer,
   useMemo,
@@ -7,13 +8,21 @@ import React, {
   PropsWithChildren,
 } from 'react';
 
+type ModalConfig = Partial<ModalProps>;
+
 interface State {
   modalView: string;
   isModalOpen: boolean;
   modalData: any;
+  modalConfig: {};
 }
 
-type ModalView = 'ACCOUNT_REGISTER' | 'VIEW_2';
+export const modalViews = {
+  ACCOUNT_REGISTER: 'ACCOUNT_REGISTER',
+  ACCOUNT_LOGIN: 'ACCOUNT_LOGIN',
+};
+
+type ModalView = keyof typeof modalViews;
 
 type Action =
   | {
@@ -29,12 +38,17 @@ type Action =
   | {
       type: 'SET_MODAL_DATA';
       data: any;
+    }
+  | {
+      type: 'SET_MODAL_CONFIG';
+      config: ModalConfig;
     };
 
 const initialState: State = {
   modalView: '',
   isModalOpen: false,
   modalData: null,
+  modalConfig: {},
 };
 
 export const UIContext = createContext<State | any>(initialState);
@@ -50,6 +64,8 @@ const uiReducer = (state: State, action: Action) => {
       return { ...state, isModalOpen: false };
     case 'SET_MODAL_DATA':
       return { ...state, modalData: action.data };
+    case 'SET_MODAL_CONFIG':
+      return { ...state, modalConfig: action.config };
     default:
       return state;
   }
@@ -64,6 +80,9 @@ export const UIProvider: FC<PropsWithChildren> = (props) => {
   const setModalData = (data: any) => {
     dispatch({ type: 'SET_MODAL_DATA', data });
   };
+  const setModalConfig = (config: ModalConfig) => {
+    dispatch({ type: 'SET_MODAL_CONFIG', config });
+  };
   const setModalViewAndOpen = (view: ModalView) => {
     setModalView(view);
     openModal();
@@ -76,6 +95,7 @@ export const UIProvider: FC<PropsWithChildren> = (props) => {
       closeModal,
       setModalView,
       setModalData,
+      setModalConfig,
       setModalViewAndOpen,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps

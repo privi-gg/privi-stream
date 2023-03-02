@@ -15,8 +15,8 @@ const SetUpAccountButton: FC<ButtonProps> = ({ ...props }) => {
   };
 
   return (
-    <Button onClick={handleSetUp} disabled={isLoading} {...props}>
-      Register
+    <Button onClick={handleSetUp} disabled={isLoading} colorScheme="gray" {...props}>
+      Set up Account
     </Button>
   );
 };

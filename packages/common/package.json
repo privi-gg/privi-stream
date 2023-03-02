@@ -15,9 +15,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@metamask/eth-sig-util": "^5.0.2",
     "buffer": "^6.0.3",
     "ethereum-cryptography": "^1.1.2",
     "ethers": "^5.7.2",
+    "privi-utils": "https://github.com/privi-gg/privi-utils.git#77e45aee0d65703b735f798d2ee0210085470f36",
     "tweetnacl": "^1.0.3",
     "tweetnacl-util": "^0.15.1",
     "xcircomlib": "npm:circomlib@^0.5.5"

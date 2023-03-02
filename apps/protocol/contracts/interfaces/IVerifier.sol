@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 interface IVerifier {
     // Proposal
@@ -10,7 +10,7 @@ interface IVerifier {
         uint256[2] memory inputs
     ) external view returns (bool r);
 
-    // Withdraw
+    // Checkpoint
     function verifyProof(
         uint256[2] memory a,
         uint256[2][2] memory b,

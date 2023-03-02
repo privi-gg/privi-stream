@@ -1,4 +1,4 @@
-import { VStack, Box, StackProps, Divider } from '@chakra-ui/react';
+import { VStack, Box, StackProps } from '@chakra-ui/react';
 import Footer from './Footer';
 import Header from './Header';
 
@@ -10,7 +10,7 @@ const Layout: React.FC<StackProps> = ({ children, ...props }) => {
       <Box minH="81vh" flex={1}>
         {children}
       </Box>
-      {/* <Footer /> */}
+      <Footer px={{ base: 4, md: 24 }} />
     </VStack>
   );
 };

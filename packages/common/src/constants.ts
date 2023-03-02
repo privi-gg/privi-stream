@@ -1,12 +1,17 @@
-import { ethers } from 'ethers';
+import { ethers, utils } from 'ethers';
 const { BigNumber } = ethers;
-
-export const ZERO_VALUE = BigNumber.from(
-  '21663839004416932945382355908790599225266501822907911457504978515578255421292',
-).toHexString();
+const { keccak256, toUtf8Bytes } = utils;
 
 export const FIELD_SIZE = BigNumber.from(
   '21888242871839275222246405745257275088548364400416034343698204186575808495617',
 ).toHexString();
 
-export const TREE_HEIGHT = 20;
+export const ZERO_LEAF_STREAM = BigNumber.from(keccak256(toUtf8Bytes('privi-stream:stream')))
+  .mod(FIELD_SIZE)
+  .toHexString();
+
+export const ZERO_LEAF_CHECKPOINT = BigNumber.from(
+  keccak256(toUtf8Bytes('privi-stream:checkpoint')),
+)
+  .mod(FIELD_SIZE)
+  .toHexString();

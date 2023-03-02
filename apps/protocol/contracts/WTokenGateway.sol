@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IWToken.sol";
-import "./interfaces/ITsunami.sol";
+import "./interfaces/IPool.sol";
+import "./interfaces/IWTokenGateway.sol";
 
-contract WTokenGateway {
+import {CreateProofArgs, CheckpointProofArgs, ExtData} from "./helpers/DataTypes.sol";
+
+contract WTokenGateway is IWTokenGateway {
     IWToken public immutable wToken;
 
     constructor(address wToken_) {
@@ -13,39 +16,31 @@ contract WTokenGateway {
     }
 
     function create(
-        address tsunami,
-        DataTypes.CreateProofArgs calldata args,
-        bytes calldata encryptedOutput
+        address pool,
+        CreateProofArgs calldata args,
+        CreateData calldata data
     ) external payable {
-        require(msg.value == args.publicAmount, "Wrong amount sent");
+        if (msg.value != args.publicAmount) {
+            revert InvalidValueSent(msg.value, args.publicAmount);
+        }
+
         wToken.deposit{value: msg.value}();
-        wToken.approve(tsunami, msg.value);
-        ITsunami(tsunami).create(args, encryptedOutput);
+        wToken.approve(pool, msg.value);
+        IPool(pool).create(args, data);
     }
 
     function withdraw(
-        address tsunami,
+        address pool,
         address unwrappedTokenReceiver,
-        DataTypes.WithdrawProofArgs calldata args,
-        DataTypes.ExtData calldata extData
+        CheckpointProofArgs calldata args,
+        ExtData calldata extData
     ) external {
-        require(extData.recipient == address(this), "Require recipient to be gateway");
-        ITsunami(tsunami).withdraw(args, extData);
-        uint256 withdrawAmount = uint256(extData.withdrawAmount);
-        wToken.approve(address(wToken), withdrawAmount);
-        wToken.withdraw(withdrawAmount);
-        _safeTransferETH(unwrappedTokenReceiver, withdrawAmount);
-    }
+        if (extData.recipient != address(this)) {
+            revert RecipientNotGateway(extData.recipient, address(this));
+        }
 
-    function revoke(
-        address tsunami,
-        address unwrappedTokenReceiver,
-        DataTypes.RevokeProofArgs calldata args,
-        DataTypes.ExtData calldata extData
-    ) external {
-        require(extData.recipient == address(this), "Require recipient to be gateway");
-        ITsunami(tsunami).revoke(args, extData);
-        uint256 withdrawAmount = uint256(extData.withdrawAmount);
+        IPool(pool).withdraw(args, extData);
+        uint256 withdrawAmount = extData.withdrawAmount;
         wToken.approve(address(wToken), withdrawAmount);
         wToken.withdraw(withdrawAmount);
         _safeTransferETH(unwrappedTokenReceiver, withdrawAmount);

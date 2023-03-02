@@ -1,4 +1,5 @@
 import { FC, ReactNode } from 'react';
+import { InstanceProvider } from './instance';
 import { ShieldedAccountProvider } from './shieldedAccount';
 import { UIProvider } from './ui';
 import WalletProvider from './wallet';
@@ -6,9 +7,11 @@ import WalletProvider from './wallet';
 const AppContext: FC<{ children: ReactNode }> = ({ children }) => {
   return (
     <WalletProvider>
-      <ShieldedAccountProvider>
-        <UIProvider>{children}</UIProvider>
-      </ShieldedAccountProvider>
+      <UIProvider>
+        <ShieldedAccountProvider>
+          <InstanceProvider>{children}</InstanceProvider>
+        </ShieldedAccountProvider>
+      </UIProvider>
     </WalletProvider>
   );
 };
