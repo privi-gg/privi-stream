@@ -72,8 +72,6 @@ export async function prepareWithdrawProof({
     throw new Error('Current time is less than output checkpoint time');
   }
 
-  console.log({ stream, shieldedWallet });
-
   const checkpoints = await fetchReceiverCheckpoints(pool, shieldedWallet, stream);
   let input = checkpoints.find((c) => c.stream.commitment === stream.commitment);
   if (!input) {
@@ -82,7 +80,6 @@ export async function prepareWithdrawProof({
     input.leafIndex = 0;
   }
 
-  console.log({ stream, outCheckpointTime });
   const output = new Checkpoint({
     stream,
     checkpointTime: outCheckpointTime,
@@ -94,7 +91,6 @@ export async function prepareWithdrawProof({
 
   const streamTree = await buildStreamTree(pool);
   const checkpointTree = await buildCheckpointTree(pool);
-  console.log('Built tree');
 
   const prover = new CheckpointProver({
     snarkJs,
@@ -103,19 +99,6 @@ export async function prepareWithdrawProof({
     streamTree,
     checkpointTree,
   });
-
-  // console.log(`Preparing proof`);
-  // console.log({
-  //   isZero: input.isZero(),
-  //   input,
-  //   output,
-  //   currentTime,
-  //   withdrawAmount,
-  //   fee,
-  //   recipient,
-  //   relayer,
-  // });
-  // console.log(`nullifier`, input.nullifier);
 
   const { proofArgs, withdrawData: extData } = await prover.prepareCheckpointProof({
     input,
@@ -126,8 +109,6 @@ export async function prepareWithdrawProof({
     recipient,
     relayer,
   });
-
-  console.log('Proof prepared');
 
   return {
     proofArgs,
