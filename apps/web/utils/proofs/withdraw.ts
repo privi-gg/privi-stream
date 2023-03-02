@@ -77,7 +77,6 @@ export async function prepareWithdrawProof({
   if (!input) {
     logger.info(`No previous checkpoint found, using zero checkpoint as input`);
     input = Checkpoint.zero(stream);
-    input.leafIndex = 0;
   }
 
   const output = new Checkpoint({
