@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "mocha -r ts-node/register ./**/*.test.ts"
+    "test": "mocha -r ts-node/register ./**/*.test.ts",
+    "postinstall": "yarn build"
   },
   "keywords": [],
   "author": "",
